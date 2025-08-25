@@ -166,18 +166,37 @@ const App = () => {
       const pdf = new jsPDF({ orientation: 'portrait', unit: 'pt', format: 'a4' });
       const pdfWidth = pdf.internal.pageSize.getWidth();
       const pdfHeight = pdf.internal.pageSize.getHeight();
-      const imgRatio = img.height / img.width;
-      const imgHeight = pdfWidth * imgRatio;
 
-      let position = 0;
-      let leftHeight = imgHeight;
-      const pageHeight = pdfHeight;
-      const pageCount = Math.ceil(imgHeight / pageHeight);
-      for (let page = 0; page < pageCount; page++) {
-        pdf.addImage(dataUrl, 'JPEG', 0, position, pdfWidth, imgHeight);
-        leftHeight -= pageHeight;
-        position -= pageHeight;
-        if (page < pageCount - 1) pdf.addPage();
+      const imgWidth = img.width;
+      const imgHeight = img.height;
+      const scale = pdfWidth / imgWidth;
+      const pageHeightInImagePx = pdfHeight / scale;
+      const totalPages = Math.ceil(imgHeight / pageHeightInImagePx);
+
+      const pageCanvas = document.createElement('canvas');
+      pageCanvas.width = Math.round(imgWidth);
+      pageCanvas.height = Math.round(pageHeightInImagePx);
+      const pageCtx = pageCanvas.getContext('2d');
+
+      for (let page = 0; page < totalPages; page++) {
+        const srcY = Math.round(page * pageHeightInImagePx);
+        const srcH = Math.min(Math.round(pageHeightInImagePx), imgHeight - srcY);
+        pageCtx.clearRect(0, 0, pageCanvas.width, pageCanvas.height);
+        pageCtx.drawImage(
+          img,
+          0,
+          srcY,
+          imgWidth,
+          srcH,
+          0,
+          0,
+          pageCanvas.width,
+          srcH
+        );
+        const pageDataUrl = pageCanvas.toDataURL('image/jpeg', 0.85);
+        const drawHeight = (srcH * scale);
+        pdf.addImage(pageDataUrl, 'JPEG', 0, 0, pdfWidth, drawHeight);
+        if (page < totalPages - 1) pdf.addPage();
       }
 
       pdf.save(`${cvData.name.replace(/\s/g, '_')}_CV.pdf`);
