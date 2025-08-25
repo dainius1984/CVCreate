@@ -167,36 +167,17 @@ const App = () => {
       const pdfWidth = pdf.internal.pageSize.getWidth();
       const pdfHeight = pdf.internal.pageSize.getHeight();
 
-      const imgWidth = img.width;
-      const imgHeight = img.height;
-      const scale = pdfWidth / imgWidth;
-      const pageHeightInImagePx = pdfHeight / scale;
-      const totalPages = Math.ceil(imgHeight / pageHeightInImagePx);
+      // Simpler, stable pagination: draw the full tall image each page with an upward offset.
+      const imgNaturalWidth = img.width;
+      const imgNaturalHeight = img.height;
+      const scaledHeight = (pdfWidth / imgNaturalWidth) * imgNaturalHeight;
 
-      const pageCanvas = document.createElement('canvas');
-      pageCanvas.width = Math.round(imgWidth);
-      pageCanvas.height = Math.round(pageHeightInImagePx);
-      const pageCtx = pageCanvas.getContext('2d');
-
-      for (let page = 0; page < totalPages; page++) {
-        const srcY = Math.round(page * pageHeightInImagePx);
-        const srcH = Math.min(Math.round(pageHeightInImagePx), imgHeight - srcY);
-        pageCtx.clearRect(0, 0, pageCanvas.width, pageCanvas.height);
-        pageCtx.drawImage(
-          img,
-          0,
-          srcY,
-          imgWidth,
-          srcH,
-          0,
-          0,
-          pageCanvas.width,
-          srcH
-        );
-        const pageDataUrl = pageCanvas.toDataURL('image/jpeg', 0.85);
-        const drawHeight = (srcH * scale);
-        pdf.addImage(pageDataUrl, 'JPEG', 0, 0, pdfWidth, drawHeight);
-        if (page < totalPages - 1) pdf.addPage();
+      let yOffset = 0;
+      const step = pdfHeight - 1; // 1pt overlap to avoid hairline gaps
+      while (yOffset < scaledHeight) {
+        pdf.addImage(dataUrl, 'JPEG', 0, -yOffset, pdfWidth, scaledHeight);
+        yOffset += step;
+        if (yOffset < scaledHeight) pdf.addPage();
       }
 
       pdf.save(`${cvData.name.replace(/\s/g, '_')}_CV.pdf`);
