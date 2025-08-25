@@ -10,3 +10,6 @@
 #cv-preview .border-gray-200 { border-color: #e5e7eb !important; }
 #cv-preview .text-blue-600 { color: #2563eb !important; }
 
+/* Disable shadows while exporting to avoid dark bands between PDF pages */
+#cv-preview.exporting { box-shadow: none !important; }
+

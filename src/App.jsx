@@ -146,6 +146,8 @@ const App = () => {
     
       const exportWidth = cvElement.scrollWidth;
       const exportHeight = cvElement.scrollHeight;
+      // Temporarily add class to remove shadows during capture
+      cvElement.classList.add('exporting');
       const dataUrl = await toJpeg(cvElement, {
         cacheBust: true,
         pixelRatio: 1.5,
@@ -181,8 +183,10 @@ const App = () => {
       }
 
       pdf.save(`${cvData.name.replace(/\s/g, '_')}_CV.pdf`);
+      cvElement.classList.remove('exporting');
     } catch (error) {
       console.error('Failed to generate PDF:', error);
+      try { cvRef.current?.classList.remove('exporting'); } catch (e) {}
     }
   };
 
