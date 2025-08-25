@@ -43,23 +43,35 @@ const App = () => {
   });
 
   const handleDataChange = (path, value) => {
-    setCvData(prevData => {
-        let newData = { ...prevData };
-        let current = newData;
-        const keys = path.split('.');
-        for (let i = 0; i < keys.length - 1; i++) {
-            const key = keys[i];
-            const nextKey = keys[i+1];
-            if (!isNaN(parseInt(nextKey))) {
-                current = current[key][parseInt(nextKey)];
-                i++;
+    const setAtPath = (source, pathStr, nextValue) => {
+      const parts = pathStr.split('.');
+      const rootClone = Array.isArray(source) ? [...source] : { ...source };
+      let cursor = rootClone;
+      for (let i = 0; i < parts.length - 1; i++) {
+        const rawKey = parts[i];
+        const key = Number.isNaN(Number(rawKey)) ? rawKey : Number(rawKey);
+        const nextRaw = parts[i + 1];
+        const nextIsIndex = !Number.isNaN(Number(nextRaw));
+
+        const currentVal = cursor[key];
+        let nextContainer;
+        if (nextIsIndex) {
+          nextContainer = Array.isArray(currentVal) ? [...currentVal] : [];
             } else {
-                current = current[key];
-            }
+          nextContainer = currentVal && typeof currentVal === 'object' && !Array.isArray(currentVal)
+            ? { ...currentVal }
+            : {};
         }
-        current[keys[keys.length - 1]] = value;
-        return newData;
-    });
+        cursor[key] = nextContainer;
+        cursor = nextContainer;
+      }
+      const lastRaw = parts[parts.length - 1];
+      const lastKey = Number.isNaN(Number(lastRaw)) ? lastRaw : Number(lastRaw);
+      cursor[lastKey] = nextValue;
+      return rootClone;
+    };
+
+    setCvData(prev => setAtPath(prev, path, value));
   };
   
   const handleAddResponsibility = (expIndex) => {
@@ -112,8 +124,17 @@ const App = () => {
     };
     updateScale();
     window.addEventListener('resize', updateScale);
-    return () => window.removeEventListener('resize', updateScale);
-  }, []);
+    const cvEl = cvRef.current;
+    let ro;
+    if (cvEl && 'ResizeObserver' in window) {
+      ro = new ResizeObserver(updateScale);
+      ro.observe(cvEl);
+    }
+    return () => {
+      window.removeEventListener('resize', updateScale);
+      if (ro) ro.disconnect();
+    };
+  }, [cvRef]);
 
   const handlePdfExport = async () => {
     try {
@@ -150,12 +171,13 @@ const App = () => {
 
       let position = 0;
       let leftHeight = imgHeight;
-      
-      while (leftHeight > 0) {
+      const pageHeight = pdfHeight;
+      const pageCount = Math.ceil(imgHeight / pageHeight);
+      for (let page = 0; page < pageCount; page++) {
         pdf.addImage(dataUrl, 'JPEG', 0, position, pdfWidth, imgHeight);
-        leftHeight -= pdfHeight;
-        position -= pdfHeight;
-        if (leftHeight > 0) pdf.addPage();
+        leftHeight -= pageHeight;
+        position -= pageHeight;
+        if (page < pageCount - 1) pdf.addPage();
       }
 
       pdf.save(`${cvData.name.replace(/\s/g, '_')}_CV.pdf`);
@@ -183,7 +205,7 @@ const App = () => {
       </div>
       <div ref={previewContainerRef} className="w-full lg:w-1/2 p-4 lg:p-8 flex justify-center overflow-y-auto">
         <div style={{ transform: `scale(${previewScale})`, transformOrigin: 'top center' }}>
-          <CVPreview cvData={cvData} cvRef={cvRef} />
+        <CVPreview cvData={cvData} cvRef={cvRef} />
         </div>
       </div>
     </div>

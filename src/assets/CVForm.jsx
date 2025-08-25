@@ -39,8 +39,6 @@ const CVForm = ({ cvData, handleDataChange, handleAddResponsibility, handleRemov
           onChange={handleDataChange}
           onAddExperience={handleAddExperience}
           onRemoveExperience={handleRemoveExperience}
-          onAddResponsibility={handleAddResponsibility}
-          onRemoveResponsibility={handleRemoveResponsibility}
         />
       </div>
 

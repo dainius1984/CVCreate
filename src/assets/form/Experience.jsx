@@ -1,6 +1,6 @@
 import React from 'react';
 
-const Experience = ({ experience, onChange, onAddExperience, onRemoveExperience, onAddResponsibility, onRemoveResponsibility }) => {
+const Experience = ({ experience, onChange, onAddExperience, onRemoveExperience }) => {
   return (
     <div className="mb-6">
       <h2 className="text-xl font-semibold text-gray-700 mb-3">Professional Experience</h2>
@@ -55,25 +55,14 @@ const Experience = ({ experience, onChange, onAddExperience, onRemoveExperience,
           </label>
           <div className="mt-4">
             <h4 className="text-md font-medium text-gray-700 mb-2">Responsibilities</h4>
-            {exp.responsibilities.map((resp, respIndex) => (
-              <div key={respIndex} className="flex items-center mb-2">
-                <span className="text-gray-500 mr-2">•</span>
-                <input
-                  type="text"
-                  value={resp}
-                  onChange={(e) => onChange(`experience.${expIndex}.responsibilities.${respIndex}`, e.target.value)}
-                  className="flex-grow rounded-md border-gray-300 shadow-sm p-2 text-sm"
-                />
-                <button onClick={() => onRemoveResponsibility(expIndex, respIndex)} className="ml-2 text-red-500 hover:text-red-700">
-                  <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" viewBox="0 0 20 20" fill="currentColor">
-                    <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM7 9a1 1 0 000 2h6a1 1 0 100-2H7z" clipRule="evenodd" />
-                  </svg>
-                </button>
-              </div>
-            ))}
-            <button onClick={() => onAddResponsibility(expIndex)} className="mt-2 text-sm text-blue-600 hover:underline">
-              + Add Responsibility
-            </button>
+            <p className="text-sm text-gray-500 mb-1">One per line. Use Shift+Enter for new line.</p>
+            <textarea
+              rows={5}
+              value={(exp.responsibilities || []).join('\n')}
+              onChange={(e) => onChange(`experience.${expIndex}.responsibilities`, e.target.value.split(/\r?\n/))}
+              className="w-full rounded-md border-gray-300 shadow-sm p-2 text-sm"
+              placeholder="Used [Action Verb] to achieve [Result]...\nCollaborated with ..."
+            />
           </div>
         </div>
       ))}
