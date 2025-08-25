@@ -1,4 +1,4 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { toJpeg } from 'html-to-image';
 import { jsPDF } from 'jspdf';
 import CVForm from './assets/CVForm.jsx';
@@ -8,6 +8,8 @@ import SaveAsPdfButton from './assets/SaveAsPdfButton.jsx';
 // Main App component
 const App = () => {
   const cvRef = useRef(null);
+  const previewContainerRef = useRef(null);
+  const [previewScale, setPreviewScale] = useState(1);
   const [cvData, setCvData] = useState({
     name: 'Your Name',
     title: '',
@@ -97,6 +99,22 @@ const App = () => {
     });
   };
 
+  useEffect(() => {
+    const updateScale = () => {
+      const cvEl = cvRef.current;
+      const container = previewContainerRef.current;
+      if (!cvEl || !container) return;
+      const cvHeight = cvEl.scrollHeight;
+      const containerHeight = container.clientHeight;
+      if (!cvHeight || !containerHeight) return;
+      const scale = Math.min(1, (containerHeight - 24) / cvHeight);
+      setPreviewScale(scale > 0 && isFinite(scale) ? scale : 1);
+    };
+    updateScale();
+    window.addEventListener('resize', updateScale);
+    return () => window.removeEventListener('resize', updateScale);
+  }, []);
+
   const handlePdfExport = async () => {
     try {
     const cvElement = cvRef.current;
@@ -163,8 +181,10 @@ const App = () => {
           <SaveAsPdfButton onClick={handlePdfExport} />
         </div>
       </div>
-      <div className="w-full lg:w-1/2 p-4 lg:p-8 flex justify-center">
-        <CVPreview cvData={cvData} cvRef={cvRef} />
+      <div ref={previewContainerRef} className="w-full lg:w-1/2 p-4 lg:p-8 flex justify-center overflow-y-auto">
+        <div style={{ transform: `scale(${previewScale})`, transformOrigin: 'top center' }}>
+          <CVPreview cvData={cvData} cvRef={cvRef} />
+        </div>
       </div>
     </div>
   );
