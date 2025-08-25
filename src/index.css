@@ -1,0 +1,12 @@
+@import "tailwindcss";
+
+/* Hex color overrides for PDF capture (html2canvas can't parse oklch) */
+#cv-preview { background-color: #ffffff !important; color: #111827 !important; }
+#cv-preview .bg-white { background-color: #ffffff !important; }
+#cv-preview .text-gray-800 { color: #1f2937 !important; }
+#cv-preview .text-gray-700 { color: #374151 !important; }
+#cv-preview .text-gray-600 { color: #4b5563 !important; }
+#cv-preview .text-gray-500 { color: #6b7280 !important; }
+#cv-preview .border-gray-200 { border-color: #e5e7eb !important; }
+#cv-preview .text-blue-600 { color: #2563eb !important; }
+
