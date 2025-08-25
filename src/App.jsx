@@ -105,11 +105,16 @@ const App = () => {
       return;
     }
     
+      const exportWidth = cvElement.scrollWidth;
+      const exportHeight = cvElement.scrollHeight;
       const dataUrl = await toJpeg(cvElement, {
         cacheBust: true,
         pixelRatio: 1.5,
         backgroundColor: '#ffffff',
         quality: 0.75,
+        width: exportWidth,
+        height: exportHeight,
+        style: { width: `${exportWidth}px`, height: `${exportHeight}px` },
       });
 
       const img = new Image();
