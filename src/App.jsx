@@ -259,11 +259,9 @@ const App = () => {
       let pageNumber = 1;
       const maxPages = 10;
       const seamOverlap = 2; // overlap pages slightly to hide any bottom seam line
+      const epsilon = 1; // threshold in pts to consider we're at the end
   
-      while (currentPageTop < scaledHeight && pageNumber <= maxPages) {
-        if (pageNumber > 1) {
-          pdf.addPage();
-        }
+      while (currentPageTop < scaledHeight - epsilon && pageNumber <= maxPages) {
   
         // Fill page background
         pdf.setFillColor(255, 255, 255);
@@ -317,11 +315,10 @@ const App = () => {
   
         pdf.restoreGraphicsState();
 
-        // Draw vertical side guide lines on top of content (no top/bottom lines)
+        // Draw only the left vertical side guide line (no top/bottom lines)
         pdf.setDrawColor(156, 163, 175); // silky gray (tailwind gray-400)
         pdf.setLineWidth(0.75);
-        pdf.line(margin, margin, margin, pdfHeight - margin); // left side
-        pdf.line(pdfWidth - margin, margin, pdfWidth - margin, pdfHeight - margin); // right side
+        pdf.line(margin, margin, margin, pdfHeight - margin);
 
         console.log(`Page ${pageNumber}: ${currentPageTop.toFixed(1)} to ${actualPageBottom.toFixed(1)}`);
   
@@ -329,7 +326,12 @@ const App = () => {
         // Slight overlap to avoid visible seam lines between pages
         const nextTop = Math.max(actualPageBottom - seamOverlap, 0);
         currentPageTop = nextTop > currentPageTop ? nextTop : actualPageBottom;
-        pageNumber++;
+        if (scaledHeight - currentPageTop > epsilon && pageNumber < maxPages) {
+          pdf.addPage();
+          pageNumber++;
+        } else {
+          break;
+        }
       }
   
       // Save the PDF
