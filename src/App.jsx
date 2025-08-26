@@ -169,114 +169,174 @@ const App = () => {
 
   const handlePdfExport = async () => {
     try {
-    const cvElement = cvRef.current;
-    if (!cvElement) {
-      console.error('CV element not found.');
-      return;
-    }
-    
-      const exportWidth = cvElement.scrollWidth;
-      const exportHeight = cvElement.scrollHeight;
-
-      // Compute safe page-break boundaries based on sections and breakable items
-      const safeBreakElements = cvElement.querySelectorAll('[data-section], li[data-break]');
-      const breakOffsetsPx = [];
-      safeBreakElements.forEach((el) => {
-        const top = el.offsetTop;
-        const height = el.offsetHeight;
-        const end = top + height; // end of this block
-        if (end > 0 && end < exportHeight) {
-          // Avoid duplicates by only pushing increasing values
-          const last = breakOffsetsPx[breakOffsetsPx.length - 1];
-          if (last === undefined || Math.abs(end - last) > 1) {
-            breakOffsetsPx.push(end);
-          }
-        }
-      });
-      // Ensure the very end is a break too
-      if (breakOffsetsPx[breakOffsetsPx.length - 1] !== exportHeight) {
-        breakOffsetsPx.push(exportHeight);
+      const cvElement = cvRef.current;
+      if (!cvElement) {
+        console.error('CV element not found.');
+        return;
       }
+  
       // Temporarily add class to remove shadows during capture
       cvElement.classList.add('exporting');
+  
+      const exportWidth = cvElement.scrollWidth;
+      const exportHeight = cvElement.scrollHeight;
+  
+      // PDF setup - A4 dimensions in points
+      const pdf = new jsPDF({ orientation: 'portrait', unit: 'pt', format: 'a4' });
+      const pdfWidth = pdf.internal.pageSize.getWidth(); // 595.28 pts
+      const pdfHeight = pdf.internal.pageSize.getHeight(); // 841.89 pts
+      
+      // Margins in points (1 inch = 72 pts, so ~0.75 inch margins)
+      const margin = 54; // 54pts = 0.75 inches
+      const contentWidth = pdfWidth - (margin * 2);
+      const contentHeight = pdfHeight - (margin * 2);
+  
+      // Calculate how the CV scales to fit PDF width
+      const scaleRatio = contentWidth / exportWidth;
+      const scaledHeight = exportHeight * scaleRatio;
+  
+      // Find all sections AND bullet points for smart page breaks
+      const sections = cvElement.querySelectorAll('[data-section]');
+      const bulletPoints = cvElement.querySelectorAll('li[data-break], li');
+      const breakPoints = [];
+      
+      // Add section boundaries
+      sections.forEach((section, index) => {
+        const rect = section.getBoundingClientRect();
+        const cvRect = cvElement.getBoundingClientRect();
+        const relativeTop = rect.top - cvRect.top + cvElement.scrollTop;
+        const relativeBottom = relativeTop + section.offsetHeight;
+        
+        breakPoints.push({
+          element: section,
+          top: relativeTop * scaleRatio,
+          bottom: relativeBottom * scaleRatio,
+          type: 'section',
+          priority: 1, // High priority
+          name: section.getAttribute('data-section') || `section-${index}`
+        });
+      });
+  
+      // Add bullet point boundaries
+      bulletPoints.forEach((bullet, index) => {
+        const rect = bullet.getBoundingClientRect();
+        const cvRect = cvElement.getBoundingClientRect();
+        const relativeTop = rect.top - cvRect.top + cvElement.scrollTop;
+        const relativeBottom = relativeTop + bullet.offsetHeight;
+        
+        breakPoints.push({
+          element: bullet,
+          top: relativeTop * scaleRatio,
+          bottom: relativeBottom * scaleRatio,
+          type: 'bullet',
+          priority: 2, // Medium priority
+          name: `bullet-${index}`
+        });
+      });
+  
+      // Sort break points by position
+      breakPoints.sort((a, b) => a.top - b.top);
+  
+      // Generate high-quality image
       const dataUrl = await toJpeg(cvElement, {
         cacheBust: true,
-        pixelRatio: 1.5,
+        pixelRatio: 2,
         backgroundColor: '#ffffff',
-        quality: 0.75,
+        quality: 0.9,
         width: exportWidth,
         height: exportHeight,
-        style: { width: `${exportWidth}px`, height: `${exportHeight}px` },
       });
-
+  
       const img = new Image();
       img.src = dataUrl;
       await new Promise((resolve, reject) => {
         img.onload = resolve;
         img.onerror = reject;
       });
-
-      const margin = 24; // 24pt (~8.5mm)
-      const pdf = new jsPDF({ orientation: 'portrait', unit: 'pt', format: 'a4' });
-      const pdfWidth = pdf.internal.pageSize.getWidth();
-      const pdfHeight = pdf.internal.pageSize.getHeight();
-
-      // Simpler, stable pagination: draw the full tall image each page with an upward offset.
-      const imgNaturalWidth = img.width;
-      const imgNaturalHeight = img.height;
-      const contentWidth = pdfWidth - margin * 2;
-      const scaledHeight = (contentWidth / imgNaturalWidth) * imgNaturalHeight;
-
-      let yOffset = 0;
-      const step = (pdfHeight - margin * 2); // drawable height per page in PDF pts
-      const seamOverlap = 1; // small overlap to avoid visible seams
-
-      // Convert DOM break offsets to scaled image coordinates used in addImage
-      const scale = contentWidth / imgNaturalWidth;
-      const breakOffsetsScaled = breakOffsetsPx
-        .map((y) => y * scale)
-        .filter((y) => y > 0 && y < scaledHeight)
-        .sort((a, b) => a - b);
-
-      while (yOffset < scaledHeight) {
-        // Paint solid white page background
-        pdf.setFillColor(255, 255, 255);
-        pdf.rect(0, 0, pdfWidth, pdfHeight, 'F');
-        pdf.addImage(dataUrl, 'JPEG', margin, margin - yOffset, contentWidth, scaledHeight);
-        // Find next safe break at or before the natural step
-        const target = yOffset + step;
-        // Choose the furthest break within [yOffset, target]
-        let nextBreak = undefined;
-        for (let i = breakOffsetsScaled.length - 1; i >= 0; i--) {
-          const b = breakOffsetsScaled[i];
-          if (b > yOffset + 1 && b <= target + 0.5) { // ensure meaningful progress
-            nextBreak = b;
-            break;
-          }
-        }
-        if (nextBreak === undefined) {
-          // If none in range, choose the next available break after the target
-          for (let i = 0; i < breakOffsetsScaled.length; i++) {
-            const b = breakOffsetsScaled[i];
-            if (b > target) { nextBreak = b; break; }
-          }
-        }
-        if (nextBreak === undefined) nextBreak = scaledHeight;
-        let nextOffset = Math.max(yOffset + 1, nextBreak - seamOverlap);
-        if (scaledHeight - nextOffset <= 1) {
-          // Reached the end; stop without adding a new page
-          yOffset = scaledHeight;
-        } else {
-          yOffset = nextOffset;
+  
+      // Smart pagination logic
+      let currentPageTop = 0;
+      let pageNumber = 1;
+      const maxPages = 10;
+  
+      while (currentPageTop < scaledHeight && pageNumber <= maxPages) {
+        if (pageNumber > 1) {
           pdf.addPage();
         }
+  
+        // Fill page background
+        pdf.setFillColor(255, 255, 255);
+        pdf.rect(0, 0, pdfWidth, pdfHeight, 'F');
+  
+        // Calculate the ideal end position for this page
+        const idealPageBottom = currentPageTop + contentHeight;
+        let actualPageBottom = idealPageBottom;
+  
+        // Find the best break point for this page
+        if (currentPageTop + contentHeight < scaledHeight) {
+          let bestBreakPoint = idealPageBottom;
+          let bestPriority = 999;
+          let minDistance = Infinity;
+  
+          // Look for break points near the ideal position
+          breakPoints.forEach(bp => {
+            const isInRange = bp.bottom > currentPageTop + (contentHeight * 0.7) && 
+                             bp.bottom <= idealPageBottom + (contentHeight * 0.15);
+            
+            if (isInRange) {
+              const distance = Math.abs(bp.bottom - idealPageBottom);
+              // Prioritize by type (sections > bullets) then by distance
+              if (bp.priority < bestPriority || (bp.priority === bestPriority && distance < minDistance)) {
+                bestBreakPoint = bp.bottom;
+                bestPriority = bp.priority;
+                minDistance = distance;
+              }
+            }
+          });
+  
+          actualPageBottom = Math.min(bestBreakPoint, scaledHeight);
+        } else {
+          actualPageBottom = scaledHeight;
+        }
+  
+        // Add proper spacing - create a clipping mask to ensure margins
+        pdf.saveGraphicsState();
+        pdf.rect(margin, margin, contentWidth, contentHeight);
+        pdf.clip();
+  
+        // Draw the image portion for this page
+        pdf.addImage(
+          dataUrl,
+          'JPEG',
+          margin,
+          margin - currentPageTop,
+          contentWidth,
+          scaledHeight
+        );
+  
+        pdf.restoreGraphicsState();
+  
+        console.log(`Page ${pageNumber}: ${currentPageTop.toFixed(1)} to ${actualPageBottom.toFixed(1)}`);
+  
+        // Move to next page
+        currentPageTop = actualPageBottom;
+        pageNumber++;
       }
-
-      pdf.save(`${cvData.name.replace(/\s/g, '_')}_CV.pdf`);
+  
+      // Save the PDF
+      const fileName = `${cvData.name.replace(/[^a-zA-Z0-9\s]/g, '').replace(/\s+/g, '_') || 'CV'}_Resume.pdf`;
+      pdf.save(fileName);
+  
       cvElement.classList.remove('exporting');
+      console.log(`PDF generated successfully with ${pageNumber - 1} pages`);
+  
     } catch (error) {
       console.error('Failed to generate PDF:', error);
-      try { cvRef.current?.classList.remove('exporting'); } catch (e) {}
+      try { 
+        cvRef.current?.classList.remove('exporting'); 
+      } catch (e) {
+        console.error('Error removing exporting class:', e);
+      }
     }
   };
 

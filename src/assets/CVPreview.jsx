@@ -5,12 +5,11 @@ const CVPreview = ({ cvData, cvRef }) => {
   const [pageBreaks, setPageBreaks] = useState([]);
   const contentRef = useRef(null);
   
-  // A4 dimensions in points (PDF units): 595.28 x 841.89 pts
-  // Convert to pixels at 96 DPI: 794px x 1123px
+  // A4 dimensions matching PDF export
   const A4_WIDTH_PX = 794;
   const A4_HEIGHT_PX = 1123;
-  const MARGIN_PX = 48; // 48px margin on all sides
-  const CONTENT_HEIGHT_PX = A4_HEIGHT_PX - (MARGIN_PX * 2); // 1027px content area
+  const MARGIN_PX = 54 * (96/72); // Convert 54pt margin to pixels (72px)
+  const CONTENT_HEIGHT_PX = A4_HEIGHT_PX - (MARGIN_PX * 2);
 
   useEffect(() => {
     const calculatePageBreaks = () => {
@@ -18,32 +17,40 @@ const CVPreview = ({ cvData, cvRef }) => {
       
       const sections = contentRef.current.querySelectorAll('[data-section]');
       const breaks = [];
-      let currentPageHeight = 0;
+      let currentY = 0;
       let pageNumber = 1;
       
-      sections.forEach((section) => {
+      // Simulate the same logic as PDF export
+      sections.forEach((section, index) => {
         const sectionHeight = section.offsetHeight;
+        const sectionTop = section.offsetTop;
+        const sectionBottom = sectionTop + sectionHeight;
         
-        // If adding this section would exceed page height, create a page break
-        if (currentPageHeight + sectionHeight > CONTENT_HEIGHT_PX && currentPageHeight > 0) {
+        // Check if we need a page break before this section
+        if (currentY > 0 && sectionBottom - currentY > CONTENT_HEIGHT_PX * 0.8) {
+          // Find best break point
+          const idealBreak = currentY + CONTENT_HEIGHT_PX;
+          let actualBreak = Math.min(sectionTop, idealBreak);
+          
           breaks.push({
-            pageNumber,
-            yPosition: currentPageHeight + (pageNumber - 1) * A4_HEIGHT_PX + MARGIN_PX
+            yPosition: actualBreak,
+            pageNumber: pageNumber,
+            reason: `Page ${pageNumber + 1} starts here (before ${section.getAttribute('data-section')})`
           });
+          
+          currentY = actualBreak;
           pageNumber++;
-          currentPageHeight = sectionHeight;
-        } else {
-          currentPageHeight += sectionHeight;
         }
+        
+        // Update current position if this section extends further
+        currentY = Math.max(currentY, sectionBottom);
       });
       
       setPageBreaks(breaks);
     };
 
-    // Calculate on mount and when content changes
     calculatePageBreaks();
     
-    // Recalculate on window resize
     const handleResize = () => setTimeout(calculatePageBreaks, 100);
     window.addEventListener('resize', handleResize);
     
@@ -52,29 +59,60 @@ const CVPreview = ({ cvData, cvRef }) => {
 
   return (
     <div className="relative">
-      {/* Page Break Indicators - Now accurately positioned */}
-      <div className="absolute inset-0 pointer-events-none z-50">
-        {/* Grid lines for A4 pages */}
+      {/* Page Break Visualization */}
+      <div className="absolute inset-0 pointer-events-none z-40">
+        {/* A4 page guides */}
         <div 
+          className="opacity-30"
           style={{
             backgroundImage: `repeating-linear-gradient(
               0deg,
               transparent 0px,
               transparent ${A4_HEIGHT_PX - 2}px,
-              #ef4444 ${A4_HEIGHT_PX - 2}px,
-              #ef4444 ${A4_HEIGHT_PX}px
+              #3b82f6 ${A4_HEIGHT_PX - 2}px,
+              #3b82f6 ${A4_HEIGHT_PX}px
             )`,
-            backgroundPosition: `0 ${MARGIN_PX}px`,
-            height: '100%',
+            height: '200%',
             width: '100%'
           }}
         />
         
+        {/* Content area guides */}
+        <div 
+          className="opacity-20 border-l-2 border-r-2 border-dashed border-green-500"
+          style={{
+            marginLeft: `${MARGIN_PX}px`,
+            marginRight: `${MARGIN_PX}px`,
+            height: '200%'
+          }}
+        />
+        
+        {/* Smart page break indicators */}
+        {pageBreaks.map((pageBreak, i) => (
+          <div key={i}>
+            {/* Break line */}
+            <div
+              className="absolute left-0 right-0 border-t-2 border-red-500 border-dashed"
+              style={{ top: `${pageBreak.yPosition + MARGIN_PX}px` }}
+            />
+            {/* Break label */}
+            <div
+              className="absolute left-2 bg-red-500 text-white text-xs px-2 py-1 rounded shadow z-50"
+              style={{ 
+                top: `${pageBreak.yPosition + MARGIN_PX - 15}px`,
+                fontSize: '10px'
+              }}
+            >
+              📄 {pageBreak.reason}
+            </div>
+          </div>
+        ))}
+        
         {/* Page numbers */}
-        {Array.from({ length: 3 }, (_, i) => (
+        {Array.from({ length: Math.ceil((contentRef.current?.offsetHeight || 0) / A4_HEIGHT_PX) + 1 }, (_, i) => (
           <div
             key={i}
-            className="absolute right-2 bg-red-500 text-white text-xs px-2 py-1 rounded shadow"
+            className="absolute right-2 bg-blue-500 text-white text-xs px-2 py-1 rounded shadow"
             style={{ 
               top: `${i * A4_HEIGHT_PX + 8}px`,
               fontSize: '10px'
@@ -83,22 +121,9 @@ const CVPreview = ({ cvData, cvRef }) => {
             Page {i + 1}
           </div>
         ))}
-        
-        {/* Dynamic page break warnings */}
-        {pageBreaks.map((pageBreak, i) => (
-          <div
-            key={i}
-            className="absolute left-2 bg-orange-500 text-white text-xs px-2 py-1 rounded shadow"
-            style={{ 
-              top: `${pageBreak.yPosition}px`,
-              fontSize: '10px'
-            }}
-          >
-            ⚠ Page {pageBreak.pageNumber + 1} starts here
-          </div>
-        ))}
       </div>
 
+      {/* CV Content */}
       <div
         ref={cvRef}
         className="bg-white shadow-xl w-full mx-auto relative z-0"
@@ -176,7 +201,7 @@ const CVPreview = ({ cvData, cvRef }) => {
             >
               <h2 className="text-xl font-bold text-gray-800 mb-3">Education</h2>
               {cvData.education.map((ed, i) => (
-                <div key={i} className="mb-3 last:mb-0">
+                <div key={i} className="mb-3 last:mb-0" data-section={`education-item-${i}`}>
                   <h3 className="text-lg font-semibold text-gray-800">
                     {ed.degree || '[Degree Name]'} | {ed.university || '[University Name]'}, {ed.cityState || '[City, State]'}
                   </h3>
@@ -253,7 +278,6 @@ const CVPreview = ({ cvData, cvRef }) => {
             </div>
           </section>
         </div>
-
       </div>
     </div>
   );

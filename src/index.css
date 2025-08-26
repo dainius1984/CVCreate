@@ -13,3 +13,11 @@
 /* Disable shadows while exporting to avoid dark bands between PDF pages */
 #cv-preview.exporting { box-shadow: none !important; }
 
+.exporting {
+    box-shadow: none !important;
+  }
+  
+  .exporting * {
+    box-shadow: none !important;
+    text-shadow: none !important;
+  }
