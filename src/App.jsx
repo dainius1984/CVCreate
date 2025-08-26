@@ -244,14 +244,23 @@ const App = () => {
         pdf.addImage(dataUrl, 'JPEG', margin, margin - yOffset, contentWidth, scaledHeight);
         // Find next safe break at or before the natural step
         const target = yOffset + step;
-        let nextBreak = breakOffsetsScaled.find((b) => b > yOffset && b <= target + 0.5);
+        // Choose the furthest break within [yOffset, target]
+        let nextBreak = undefined;
+        for (let i = breakOffsetsScaled.length - 1; i >= 0; i--) {
+          const b = breakOffsetsScaled[i];
+          if (b > yOffset + 1 && b <= target + 0.5) { // ensure meaningful progress
+            nextBreak = b;
+            break;
+          }
+        }
         if (nextBreak === undefined) {
           // If none in range, choose the next available break after the target
-          nextBreak = breakOffsetsScaled.find((b) => b > target);
+          for (let i = 0; i < breakOffsetsScaled.length; i++) {
+            const b = breakOffsetsScaled[i];
+            if (b > target) { nextBreak = b; break; }
+          }
         }
-        if (nextBreak === undefined) {
-          nextBreak = scaledHeight;
-        }
+        if (nextBreak === undefined) nextBreak = scaledHeight;
         yOffset = nextBreak;
         if (yOffset < scaledHeight) pdf.addPage();
       }
