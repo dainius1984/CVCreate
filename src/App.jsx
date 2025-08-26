@@ -195,7 +195,47 @@ const App = () => {
       const scaleRatio = contentWidth / exportWidth;
       const scaledHeight = exportHeight * scaleRatio;
   
+      // Find all sections AND bullet points for smart page breaks
+      const sections = cvElement.querySelectorAll('[data-section]');
+      const bulletPoints = cvElement.querySelectorAll('li[data-break], li');
+      const breakPoints = [];
       
+      // Add section boundaries
+      sections.forEach((section, index) => {
+        const rect = section.getBoundingClientRect();
+        const cvRect = cvElement.getBoundingClientRect();
+        const relativeTop = rect.top - cvRect.top + cvElement.scrollTop;
+        const relativeBottom = relativeTop + section.offsetHeight;
+        
+        breakPoints.push({
+          element: section,
+          top: relativeTop * scaleRatio,
+          bottom: relativeBottom * scaleRatio,
+          type: 'section',
+          priority: 1, // High priority
+          name: section.getAttribute('data-section') || `section-${index}`
+        });
+      });
+  
+      // Add bullet point boundaries
+      bulletPoints.forEach((bullet, index) => {
+        const rect = bullet.getBoundingClientRect();
+        const cvRect = cvElement.getBoundingClientRect();
+        const relativeTop = rect.top - cvRect.top + cvElement.scrollTop;
+        const relativeBottom = relativeTop + bullet.offsetHeight;
+        
+        breakPoints.push({
+          element: bullet,
+          top: relativeTop * scaleRatio,
+          bottom: relativeBottom * scaleRatio,
+          type: 'bullet',
+          priority: 2, // Medium priority
+          name: `bullet-${index}`
+        });
+      });
+  
+      // Sort break points by position
+      breakPoints.sort((a, b) => a.top - b.top);
   
       // Generate high-quality image
       const dataUrl = await toJpeg(cvElement, {
@@ -214,28 +254,84 @@ const App = () => {
         img.onerror = reject;
       });
   
-            // Simple pagination: draw the full tall image each page with an upward offset
-      let yOffset = 0;
-      const step = (pdfHeight - margin * 2);
-      const epsilon = 6; // pts threshold to avoid tiny last page
-      const totalPages = Math.ceil(scaledHeight / step);
-      while (yOffset < scaledHeight - epsilon) {
-        // Paint solid white page background
+      // Smart pagination logic
+      let currentPageTop = 0;
+      let pageNumber = 1;
+      const maxPages = 10;
+      const seamOverlap = 2; // overlap pages slightly to hide any bottom seam line
+      const epsilon = 1; // threshold in pts to consider we're at the end
+  
+      while (currentPageTop < scaledHeight - epsilon && pageNumber <= maxPages) {
+  
+        // Fill page background
         pdf.setFillColor(255, 255, 255);
         pdf.rect(0, 0, pdfWidth, pdfHeight, 'F');
-        pdf.addImage(dataUrl, 'JPEG', margin, margin - yOffset, contentWidth, scaledHeight);
+  
+        // Calculate the ideal end position for this page
+        const idealPageBottom = currentPageTop + contentHeight;
+        let actualPageBottom = idealPageBottom;
+  
+        // Find the best break point for this page
+        if (currentPageTop + contentHeight < scaledHeight) {
+          let bestBreakPoint = idealPageBottom;
+          let bestPriority = 999;
+          let minDistance = Infinity;
+  
+          // Look for break points near the ideal position
+          breakPoints.forEach(bp => {
+            const isInRange = bp.bottom > currentPageTop + (contentHeight * 0.7) && 
+                             bp.bottom <= idealPageBottom + (contentHeight * 0.15);
+            
+            if (isInRange) {
+              const distance = Math.abs(bp.bottom - idealPageBottom);
+              // Prioritize by type (sections > bullets) then by distance
+              if (bp.priority < bestPriority || (bp.priority === bestPriority && distance < minDistance)) {
+                bestBreakPoint = bp.bottom;
+                bestPriority = bp.priority;
+                minDistance = distance;
+              }
+            }
+          });
+  
+          actualPageBottom = Math.min(bestBreakPoint, scaledHeight);
+        } else {
+          actualPageBottom = scaledHeight;
+        }
+  
+        // Add proper spacing - create a clipping mask to ensure margins
+        pdf.saveGraphicsState();
+        pdf.rect(margin, margin, contentWidth, contentHeight);
+        pdf.clip();
+  
+        // Draw the image portion for this page
+        pdf.addImage(
+          dataUrl,
+          'JPEG',
+          margin,
+          margin - currentPageTop,
+          contentWidth,
+          scaledHeight
+        );
+  
+        pdf.restoreGraphicsState();
 
-        // compute tentative next offset
-        let nextOffset = yOffset + step;
-        const remaining = scaledHeight - nextOffset;
-        // If the remaining content is too small, merge into current page by stopping
-        if (remaining <= epsilon) {
+        // Draw only the left vertical side guide line (no top/bottom lines)
+        pdf.setDrawColor(156, 163, 175); // silky gray (tailwind gray-400)
+        pdf.setLineWidth(0.75);
+        pdf.line(margin, margin, margin, pdfHeight - margin);
+
+        console.log(`Page ${pageNumber}: ${currentPageTop.toFixed(1)} to ${actualPageBottom.toFixed(1)}`);
+  
+        // Move to next page
+        // Slight overlap to avoid visible seam lines between pages
+        const nextTop = Math.max(actualPageBottom - seamOverlap, 0);
+        currentPageTop = nextTop > currentPageTop ? nextTop : actualPageBottom;
+        if (scaledHeight - currentPageTop > epsilon && pageNumber < maxPages) {
+          pdf.addPage();
+          pageNumber++;
+        } else {
           break;
         }
-
-        // Only add a page if we truly have more content
-        pdf.addPage();
-        yOffset = nextOffset;
       }
   
       // Save the PDF
