@@ -209,7 +209,7 @@ const CVPreview = ({ cvData, cvRef }) => {
                   {exp.responsibilities && exp.responsibilities.length > 0 && (
                     <ul className="list-disc list-inside space-y-1 text-gray-700 text-sm">
                       {exp.responsibilities.map((resp, respIndex) => (
-                        <li key={respIndex} className="leading-relaxed">
+                        <li key={respIndex} className="leading-relaxed" data-break>
                           {resp}
                         </li>
                       ))}

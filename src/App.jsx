@@ -4,6 +4,9 @@ import { jsPDF } from 'jspdf';
 import CVForm from './assets/CVForm.jsx';
 import CVPreview from './assets/CVPreview.jsx';
 import SaveAsPdfButton from './assets/SaveAsPdfButton.jsx';
+import ImportPdfButton from './assets/ImportPdfButton.jsx';
+import ExportJsonButton from './assets/ExportJsonButton.jsx';
+import ImportJsonButton from './assets/ImportJsonButton.jsx';
 
 // Main App component
 const App = () => {
@@ -174,6 +177,26 @@ const App = () => {
     
       const exportWidth = cvElement.scrollWidth;
       const exportHeight = cvElement.scrollHeight;
+
+      // Compute safe page-break boundaries based on sections and breakable items
+      const safeBreakElements = cvElement.querySelectorAll('[data-section], li[data-break]');
+      const breakOffsetsPx = [];
+      safeBreakElements.forEach((el) => {
+        const top = el.offsetTop;
+        const height = el.offsetHeight;
+        const end = top + height; // end of this block
+        if (end > 0 && end < exportHeight) {
+          // Avoid duplicates by only pushing increasing values
+          const last = breakOffsetsPx[breakOffsetsPx.length - 1];
+          if (last === undefined || Math.abs(end - last) > 1) {
+            breakOffsetsPx.push(end);
+          }
+        }
+      });
+      // Ensure the very end is a break too
+      if (breakOffsetsPx[breakOffsetsPx.length - 1] !== exportHeight) {
+        breakOffsetsPx.push(exportHeight);
+      }
       // Temporarily add class to remove shadows during capture
       cvElement.classList.add('exporting');
       const dataUrl = await toJpeg(cvElement, {
@@ -205,13 +228,31 @@ const App = () => {
       const scaledHeight = (contentWidth / imgNaturalWidth) * imgNaturalHeight;
 
       let yOffset = 0;
-      const step = (pdfHeight - margin * 2); // no overlap to avoid divider artifacts
+      const step = (pdfHeight - margin * 2); // drawable height per page in PDF pts
+
+      // Convert DOM break offsets to scaled image coordinates used in addImage
+      const scale = contentWidth / imgNaturalWidth;
+      const breakOffsetsScaled = breakOffsetsPx
+        .map((y) => y * scale)
+        .filter((y) => y > 0 && y < scaledHeight)
+        .sort((a, b) => a - b);
+
       while (yOffset < scaledHeight) {
         // Paint solid white page background
         pdf.setFillColor(255, 255, 255);
         pdf.rect(0, 0, pdfWidth, pdfHeight, 'F');
         pdf.addImage(dataUrl, 'JPEG', margin, margin - yOffset, contentWidth, scaledHeight);
-        yOffset += step;
+        // Find next safe break at or before the natural step
+        const target = yOffset + step;
+        let nextBreak = breakOffsetsScaled.find((b) => b > yOffset && b <= target + 0.5);
+        if (nextBreak === undefined) {
+          // If none in range, choose the next available break after the target
+          nextBreak = breakOffsetsScaled.find((b) => b > target);
+        }
+        if (nextBreak === undefined) {
+          nextBreak = scaledHeight;
+        }
+        yOffset = nextBreak;
         if (yOffset < scaledHeight) pdf.addPage();
       }
 
@@ -241,7 +282,22 @@ const App = () => {
   handleAddEducation={handleAddEducation}        // ✅ Add this line
   handleRemoveEducation={handleRemoveEducation}  // ✅ Add this line
 />
-          <SaveAsPdfButton onClick={handlePdfExport} />
+          <div className="flex gap-3 flex-wrap">
+            <SaveAsPdfButton onClick={handlePdfExport} />
+            <ImportPdfButton onImport={(data) => setCvData((prev) => ({ ...prev, ...data }))} />
+            <ExportJsonButton data={cvData} fileName={`${cvData.name.replace(/\s/g, '_') || 'cv'}_data.json`} />
+            <ImportJsonButton onImport={(data) => setCvData((_) => ({
+              name: data.name || 'Your Name',
+              title: data.title || '',
+              photoUrl: data.photoUrl || 'https://placehold.co/150x150/e2e8f0/64748b?text=Your+Photo',
+              phone: data.phone || '[Phone Number]',
+              email: data.email || '[Email Address]',
+              summary: data.summary || '',
+              experience: Array.isArray(data.experience) ? data.experience : [],
+              education: Array.isArray(data.education) ? data.education : [],
+              skills: data.skills || {},
+            }))} />
+          </div>
         </div>
       </div>
       <div ref={previewContainerRef} className="w-full lg:w-1/2 p-4 lg:p-8 flex justify-center overflow-y-auto">
