@@ -216,14 +216,26 @@ const App = () => {
   
             // Simple pagination: draw the full tall image each page with an upward offset
       let yOffset = 0;
-      const step = (pdfHeight - margin * 2); // no overlap to avoid divider artifacts
-      while (yOffset < scaledHeight) {
+      const step = (pdfHeight - margin * 2);
+      const epsilon = 6; // pts threshold to avoid tiny last page
+      const totalPages = Math.ceil(scaledHeight / step);
+      while (yOffset < scaledHeight - epsilon) {
         // Paint solid white page background
         pdf.setFillColor(255, 255, 255);
         pdf.rect(0, 0, pdfWidth, pdfHeight, 'F');
         pdf.addImage(dataUrl, 'JPEG', margin, margin - yOffset, contentWidth, scaledHeight);
-        yOffset += step;
-        if (yOffset < scaledHeight) pdf.addPage();
+
+        // compute tentative next offset
+        let nextOffset = yOffset + step;
+        const remaining = scaledHeight - nextOffset;
+        // If the remaining content is too small, merge into current page by stopping
+        if (remaining <= epsilon) {
+          break;
+        }
+
+        // Only add a page if we truly have more content
+        pdf.addPage();
+        yOffset = nextOffset;
       }
   
       // Save the PDF
