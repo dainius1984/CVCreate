@@ -7,7 +7,16 @@ import Education from './form/Education.jsx';
 import Experience from './form/Experience.jsx';
 import Skills from './form/Skills.jsx';
 
-const CVForm = ({ cvData, handleDataChange, handleAddResponsibility, handleRemoveResponsibility, handleAddExperience, handleRemoveExperience }) => {
+const CVForm = ({ 
+  cvData, 
+  handleDataChange, 
+  handleAddResponsibility, 
+  handleRemoveResponsibility, 
+  handleAddExperience, 
+  handleRemoveExperience,
+  handleAddEducation,
+  handleRemoveEducation
+}) => {
   return (
     <div>
       <PersonalInfo
@@ -30,7 +39,12 @@ const CVForm = ({ cvData, handleDataChange, handleAddResponsibility, handleRemov
       </div>
 
       <div className="pt-6 mt-6 border-t border-gray-200">
-        <Education education={cvData.education} onChange={handleDataChange} />
+        <Education
+          education={cvData.education}
+          onChange={handleDataChange}
+          onAddEducation={handleAddEducation}
+          onRemoveEducation={handleRemoveEducation}
+        />
       </div>
 
       <div className="pt-6 mt-6 border-t border-gray-200">

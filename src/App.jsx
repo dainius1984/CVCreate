@@ -10,6 +10,8 @@ const App = () => {
   const cvRef = useRef(null);
   const previewContainerRef = useRef(null);
   const [previewScale, setPreviewScale] = useState(1);
+  const [guideHeightPx, setGuideHeightPx] = useState(0);
+  const [contentHeightPx, setContentHeightPx] = useState(0);
   const [cvData, setCvData] = useState({
     name: 'Your Name',
     title: '',
@@ -29,12 +31,14 @@ const App = () => {
         ],
       },
     ],
-    education: {
-      degree: '[Degree Name]',
-      university: '[University Name]',
-      cityState: '[City, State]',
-      year: '[Graduation Year]',
-    },
+    education: [
+      {
+        degree: '[Degree Name]',
+        university: '[University Name]',
+        cityState: '[City, State]',
+        year: '[Graduation Year]',
+      },
+    ],
     skills: {
       technical: '[List specific software, programming languages, or tools, e.g., JavaScript, Python, Salesforce]',
       soft: '[List key interpersonal and communication skills, e.g., Communication, Problem-solving, Teamwork]',
@@ -111,6 +115,24 @@ const App = () => {
     });
   };
 
+  const handleAddEducation = () => {
+    setCvData(prev => ({
+      ...prev,
+      education: [
+        ...prev.education,
+        { degree: '', university: '', cityState: '', year: '' },
+      ],
+    }));
+  };
+
+  const handleRemoveEducation = (idx) => {
+    setCvData(prev => {
+      const next = { ...prev, education: [...prev.education] };
+      next.education.splice(idx, 1);
+      return next;
+    });
+  };
+
   useEffect(() => {
     const updateScale = () => {
       const cvEl = cvRef.current;
@@ -121,6 +143,12 @@ const App = () => {
       if (!cvHeight || !containerHeight) return;
       const scale = Math.min(1, (containerHeight - 24) / cvHeight);
       setPreviewScale(scale > 0 && isFinite(scale) ? scale : 1);
+
+      // Update page guide metrics (A4 ratio ≈ 1.414)
+      const a4Ratio = 1.41421356237;
+      const pageHeight = Math.round(cvEl.clientWidth * a4Ratio);
+      setGuideHeightPx(pageHeight);
+      setContentHeightPx(cvHeight);
     };
     updateScale();
     window.addEventListener('resize', updateScale);
@@ -165,6 +193,7 @@ const App = () => {
         img.onerror = reject;
       });
 
+      const margin = 24; // 24pt (~8.5mm)
       const pdf = new jsPDF({ orientation: 'portrait', unit: 'pt', format: 'a4' });
       const pdfWidth = pdf.internal.pageSize.getWidth();
       const pdfHeight = pdf.internal.pageSize.getHeight();
@@ -172,12 +201,16 @@ const App = () => {
       // Simpler, stable pagination: draw the full tall image each page with an upward offset.
       const imgNaturalWidth = img.width;
       const imgNaturalHeight = img.height;
-      const scaledHeight = (pdfWidth / imgNaturalWidth) * imgNaturalHeight;
+      const contentWidth = pdfWidth - margin * 2;
+      const scaledHeight = (contentWidth / imgNaturalWidth) * imgNaturalHeight;
 
       let yOffset = 0;
-      const step = pdfHeight - 1; // 1pt overlap to avoid hairline gaps
+      const step = (pdfHeight - margin * 2); // no overlap to avoid divider artifacts
       while (yOffset < scaledHeight) {
-        pdf.addImage(dataUrl, 'JPEG', 0, -yOffset, pdfWidth, scaledHeight);
+        // Paint solid white page background
+        pdf.setFillColor(255, 255, 255);
+        pdf.rect(0, 0, pdfWidth, pdfHeight, 'F');
+        pdf.addImage(dataUrl, 'JPEG', margin, margin - yOffset, contentWidth, scaledHeight);
         yOffset += step;
         if (yOffset < scaledHeight) pdf.addPage();
       }
@@ -196,19 +229,29 @@ const App = () => {
         <div className="bg-white rounded-2xl shadow-xl p-6 lg:p-8 mb-4">
           <h1 className="text-3xl font-bold text-gray-800 mb-4">CV Builder</h1>
           <p className="text-gray-600 mb-6">Fill in the form to generate your CV. The preview will update automatically.</p>
-          <CVForm
-            cvData={cvData}
-            handleDataChange={handleDataChange}
-            handleAddResponsibility={handleAddResponsibility}
-            handleRemoveResponsibility={handleRemoveResponsibility}
-            handleAddExperience={handleAddExperience}
-            handleRemoveExperience={handleRemoveExperience}
-          />
+          // Just replace your CVForm component call with this:
+
+<CVForm
+  cvData={cvData}
+  handleDataChange={handleDataChange}
+  handleAddResponsibility={handleAddResponsibility}
+  handleRemoveResponsibility={handleRemoveResponsibility}
+  handleAddExperience={handleAddExperience}
+  handleRemoveExperience={handleRemoveExperience}
+  handleAddEducation={handleAddEducation}        // ✅ Add this line
+  handleRemoveEducation={handleRemoveEducation}  // ✅ Add this line
+/>
           <SaveAsPdfButton onClick={handlePdfExport} />
         </div>
       </div>
       <div ref={previewContainerRef} className="w-full lg:w-1/2 p-4 lg:p-8 flex justify-center overflow-y-auto">
-        <div style={{ transform: `scale(${previewScale})`, transformOrigin: 'top center' }}>
+        <div
+          style={{
+            transform: `scale(${previewScale})`,
+            transformOrigin: 'top center',
+            backgroundImage: guideHeightPx > 0 ? `repeating-linear-gradient(to bottom, rgba(59,130,246,0.2) 0, rgba(59,130,246,0.2) 1px, transparent 1px, transparent ${guideHeightPx}px)` : undefined,
+          }}
+        >
         <CVPreview cvData={cvData} cvRef={cvRef} />
         </div>
       </div>
