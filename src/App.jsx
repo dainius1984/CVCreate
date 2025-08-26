@@ -261,7 +261,8 @@ const App = () => {
       const seamOverlap = 2; // overlap pages slightly to hide any bottom seam line
       const epsilon = 1; // threshold in pts to consider we're at the end
   
-      while (currentPageTop < scaledHeight - epsilon && pageNumber <= maxPages) {
+      // Loop while there's content left to render and we haven't exceeded max pages.
+      while (currentPageTop < scaledHeight - epsilon && pageNumber <= maxPages) { 
   
         // Fill page background
         pdf.setFillColor(255, 255, 255);
