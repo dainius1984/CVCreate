@@ -267,6 +267,12 @@ const App = () => {
         // Fill page background
         pdf.setFillColor(255, 255, 255);
         pdf.rect(0, 0, pdfWidth, pdfHeight, 'F');
+
+        // Draw vertical side guide lines (no top/bottom lines)
+        pdf.setDrawColor(156, 163, 175); // silky gray (tailwind gray-400)
+        pdf.setLineWidth(0.75);
+        pdf.line(margin, margin, margin, pdfHeight - margin); // left side
+        pdf.line(pdfWidth - margin, margin, pdfWidth - margin, pdfHeight - margin); // right side
   
         // Calculate the ideal end position for this page
         const idealPageBottom = currentPageTop + contentHeight;
