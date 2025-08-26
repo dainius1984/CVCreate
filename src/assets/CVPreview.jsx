@@ -60,7 +60,7 @@ const CVPreview = ({ cvData, cvRef }) => {
   return (
     <div className="relative">
       {/* Page Break Visualization */}
-      <div className="absolute inset-0 pointer-events-none z-40">
+      <div className="absolute inset-0 pointer-events-none z-40 page-guides">
         {/* A4 page guides */}
         <div 
           className="opacity-30"
