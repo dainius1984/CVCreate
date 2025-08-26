@@ -13,6 +13,9 @@
 /* Disable shadows while exporting to avoid dark bands between PDF pages */
 #cv-preview.exporting { box-shadow: none !important; }
 
+.page-guides { display: block; }
+.exporting .page-guides, #cv-preview.exporting ~ .page-guides { display: none !important; }
+
 .exporting {
     box-shadow: none !important;
   }
