@@ -13,6 +13,13 @@
 /* Disable shadows while exporting to avoid dark bands between PDF pages */
 #cv-preview.exporting { box-shadow: none !important; }
 
+/* Hide page guides overlays when exporting */
+.exporting + .page-guides,
+#cv-preview.exporting ~ .page-guides,
+.page-guides.exporting {
+  display: none !important;
+}
+
 .exporting {
     box-shadow: none !important;
   }
