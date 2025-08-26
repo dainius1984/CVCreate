@@ -247,6 +247,7 @@ const CVPreview = ({ cvData, cvRef }) => {
                 </div>
               ))}
               
+              <div style={{ borderBottom: '1px solid #e5e7eb', marginTop: '16px' }} />
             </section>
           )}
           
