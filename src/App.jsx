@@ -229,6 +229,7 @@ const App = () => {
 
       let yOffset = 0;
       const step = (pdfHeight - margin * 2); // drawable height per page in PDF pts
+      const seamOverlap = 1; // small overlap to avoid visible seams
 
       // Convert DOM break offsets to scaled image coordinates used in addImage
       const scale = contentWidth / imgNaturalWidth;
@@ -261,8 +262,14 @@ const App = () => {
           }
         }
         if (nextBreak === undefined) nextBreak = scaledHeight;
-        yOffset = nextBreak;
-        if (yOffset < scaledHeight) pdf.addPage();
+        let nextOffset = Math.max(yOffset + 1, nextBreak - seamOverlap);
+        if (scaledHeight - nextOffset <= 1) {
+          // Reached the end; stop without adding a new page
+          yOffset = scaledHeight;
+        } else {
+          yOffset = nextOffset;
+          pdf.addPage();
+        }
       }
 
       pdf.save(`${cvData.name.replace(/\s/g, '_')}_CV.pdf`);
