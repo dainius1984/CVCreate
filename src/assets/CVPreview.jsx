@@ -26,9 +26,9 @@ const CVPreview = ({ cvData, cvRef }) => {
         const sectionTop = section.offsetTop;
         const sectionBottom = sectionTop + sectionHeight;
         
-        // Check if we need a page break before this section
-        if (currentY > 0 && sectionBottom - currentY > CONTENT_HEIGHT_PX * 0.8) {
-          // Find best break point
+        // Check if we need a page break before this section (matching PDF export logic)
+        if (currentY > 0 && sectionBottom - currentY > CONTENT_HEIGHT_PX * 0.7) {
+          // Find best break point (matching PDF export logic)
           const idealBreak = currentY + CONTENT_HEIGHT_PX;
           let actualBreak = Math.min(sectionTop, idealBreak);
           
@@ -61,25 +61,9 @@ const CVPreview = ({ cvData, cvRef }) => {
     <div className="relative">
       {/* Page Break Visualization */}
       <div className="absolute inset-0 pointer-events-none z-40 page-guides">
-        {/* A4 page guides */}
+        {/* Content area guides - only left border */}
         <div 
-          className="opacity-30"
-          style={{
-            backgroundImage: `repeating-linear-gradient(
-              0deg,
-              transparent 0px,
-              transparent ${A4_HEIGHT_PX - 2}px,
-              #3b82f6 ${A4_HEIGHT_PX - 2}px,
-              #3b82f6 ${A4_HEIGHT_PX}px
-            )`,
-            height: '200%',
-            width: '100%'
-          }}
-        />
-        
-        {/* Content area guides */}
-        <div 
-          className="opacity-20 border-l-2 border-r-2 border-dashed border-green-500"
+          className="opacity-20 border-l-2 border-dashed border-green-500"
           style={{
             marginLeft: `${MARGIN_PX}px`,
             marginRight: `${MARGIN_PX}px`,
@@ -126,14 +110,21 @@ const CVPreview = ({ cvData, cvRef }) => {
       {/* CV Content */}
       <div
         ref={cvRef}
-        className="bg-white shadow-xl w-full mx-auto relative z-0"
+        className="bg-white w-full mx-auto relative z-0"
         id="cv-preview"
         style={{ 
           backgroundColor: '#ffffff', 
           color: '#111827',
           width: `${A4_WIDTH_PX}px`,
           minHeight: `${A4_HEIGHT_PX}px`,
-          padding: `${MARGIN_PX}px`
+          padding: `${MARGIN_PX}px`,
+          border: 'none !important',
+          borderTop: 'none !important',
+          borderRight: 'none !important',
+          borderBottom: 'none !important',
+          borderLeft: 'none !important',
+          boxShadow: 'none !important',
+          outline: 'none !important'
         }}
       >
         <div ref={contentRef}>

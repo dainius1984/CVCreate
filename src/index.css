@@ -24,3 +24,14 @@
     box-shadow: none !important;
     text-shadow: none !important;
   }
+
+/* Remove all borders from CV preview */
+#cv-preview {
+  border: none !important;
+  border-top: none !important;
+  border-right: none !important;
+  border-bottom: none !important;
+  border-left: none !important;
+  outline: none !important;
+  box-shadow: none !important;
+}
