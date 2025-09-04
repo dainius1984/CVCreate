@@ -82,7 +82,16 @@ const CVPreview = ({ cvData, cvRef }) => {
         
       {/* Smart page break indicators */}
       {pageBreaks.map((pageBreak, i) => (
-        <div key={i} style={{ position: 'absolute', zIndex: 50, pointerEvents: 'none' }}>
+        <div key={i} style={{ 
+          position: 'absolute', 
+          zIndex: 50, 
+          pointerEvents: 'none',
+          border: 'none !important',
+          borderTop: 'none !important',
+          borderRight: 'none !important',
+          borderBottom: 'none !important',
+          borderLeft: 'none !important'
+        }}>
           {/* Break line */}
           <div
             style={{ 
@@ -91,9 +100,10 @@ const CVPreview = ({ cvData, cvRef }) => {
               right: '0px',
               top: `${pageBreak.yPosition + MARGIN_PX}px`,
               borderTop: '2px dashed #ef4444',
-              borderLeft: 'none',
-              borderRight: 'none',
-              borderBottom: 'none'
+              borderLeft: 'none !important',
+              borderRight: 'none !important',
+              borderBottom: 'none !important',
+              border: 'none !important'
             }}
           />
           {/* Break label */}
@@ -130,7 +140,12 @@ const CVPreview = ({ cvData, cvRef }) => {
             borderRadius: '4px',
             boxShadow: '0 1px 3px rgba(0,0,0,0.1)',
             zIndex: 50,
-            pointerEvents: 'none'
+            pointerEvents: 'none',
+            border: 'none !important',
+            borderTop: 'none !important',
+            borderRight: 'none !important',
+            borderBottom: 'none !important',
+            borderLeft: 'none !important'
           }}
         >
           Page {i + 1}

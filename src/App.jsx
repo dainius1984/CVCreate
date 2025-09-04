@@ -181,12 +181,16 @@ const App = () => {
       // Hide page break indicators and page numbers during export
       const pageBreakIndicators = cvElement.parentElement?.querySelectorAll('[style*="borderTop"][style*="dashed"]');
       const pageNumbers = cvElement.parentElement?.querySelectorAll('[style*="backgroundColor"][style*="#3b82f6"]');
+      const leftGuideLine = cvElement.parentElement?.querySelector('[style*="backgroundColor"][style*="rgba(34, 197, 94"]');
       
       if (pageBreakIndicators) {
         pageBreakIndicators.forEach(el => el.style.display = 'none');
       }
       if (pageNumbers) {
         pageNumbers.forEach(el => el.style.display = 'none');
+      }
+      if (leftGuideLine) {
+        leftGuideLine.style.display = 'none';
       }
       
       // Wait a moment for CSS changes to take effect
@@ -250,6 +254,7 @@ const App = () => {
   
       // Sort break points by position
       breakPoints.sort((a, b) => a.top - b.top);
+      console.log('PDF Export - Break points found:', breakPoints);
   
       // Generate high-quality image
       const dataUrl = await toJpeg(cvElement, {
@@ -360,6 +365,9 @@ const App = () => {
       if (pageNumbers) {
         pageNumbers.forEach(el => el.style.display = '');
       }
+      if (leftGuideLine) {
+        leftGuideLine.style.display = '';
+      }
       
       console.log(`PDF generated successfully with ${pageNumber - 1} pages`);
   
@@ -371,12 +379,16 @@ const App = () => {
         // Restore page break indicators and page numbers visibility in case of error
         const pageBreakIndicators = cvRef.current?.parentElement?.querySelectorAll('[style*="borderTop"][style*="dashed"]');
         const pageNumbers = cvRef.current?.parentElement?.querySelectorAll('[style*="backgroundColor"][style*="#3b82f6"]');
+        const leftGuideLine = cvRef.current?.parentElement?.querySelector('[style*="backgroundColor"][style*="rgba(34, 197, 94"]');
         
         if (pageBreakIndicators) {
           pageBreakIndicators.forEach(el => el.style.display = '');
         }
         if (pageNumbers) {
           pageNumbers.forEach(el => el.style.display = '');
+        }
+        if (leftGuideLine) {
+          leftGuideLine.style.display = '';
         }
       } catch (e) {
         console.error('Error removing exporting class:', e);
