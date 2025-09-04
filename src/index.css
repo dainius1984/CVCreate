@@ -45,6 +45,39 @@
   border-left: none !important;
   outline: none !important;
   box-shadow: none !important;
+  border-style: none !important;
+  border-width: 0 !important;
+  border-color: transparent !important;
+}
+
+/* Force remove any browser default borders */
+#cv-preview,
+#cv-preview *,
+#cv-preview::before,
+#cv-preview::after {
+  border-right: none !important;
+  border-bottom: none !important;
+  border-top: none !important;
+  border-left: none !important;
+  border: none !important;
+  outline: none !important;
+  box-shadow: none !important;
+}
+
+/* Force remove any potential borders from the CV content area */
+#cv-preview::before,
+#cv-preview::after {
+  display: none !important;
+  border: none !important;
+}
+
+/* Remove any potential borders from the content ref */
+#cv-preview div[ref] {
+  border: none !important;
+  border-top: none !important;
+  border-right: none !important;
+  border-bottom: none !important;
+  border-left: none !important;
 }
 
 /* Remove borders from all preview containers and their children */

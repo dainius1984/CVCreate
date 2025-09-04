@@ -47,6 +47,7 @@ const CVPreview = ({ cvData, cvRef }) => {
       });
       
       setPageBreaks(breaks);
+      console.log('Page breaks calculated:', breaks);
     };
 
     calculatePageBreaks();
@@ -153,7 +154,10 @@ const CVPreview = ({ cvData, cvRef }) => {
           borderBottom: 'none !important',
           borderLeft: 'none !important',
           boxShadow: 'none !important',
-          outline: 'none !important'
+          outline: 'none !important',
+          borderStyle: 'none !important',
+          borderWidth: '0 !important',
+          borderColor: 'transparent !important'
         }}
       >
         <div ref={contentRef}>
