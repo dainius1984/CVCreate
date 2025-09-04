@@ -17,13 +17,23 @@ export class CVPdfExporter {
       const pageNumbers = cvElement.parentElement?.querySelectorAll('[style*="backgroundColor"][style*="#3b82f6"]');
       const leftGuideLine = cvElement.parentElement?.querySelector('[style*="backgroundColor"][style*="rgba(34, 197, 94"]');
       
+      // Store original display values to restore later
+      const originalDisplays = [];
+      
       if (pageBreakIndicators) {
-        pageBreakIndicators.forEach(el => el.style.display = 'none');
+        pageBreakIndicators.forEach(el => {
+          originalDisplays.push({ element: el, display: el.style.display });
+          el.style.display = 'none';
+        });
       }
       if (pageNumbers) {
-        pageNumbers.forEach(el => el.style.display = 'none');
+        pageNumbers.forEach(el => {
+          originalDisplays.push({ element: el, display: el.style.display });
+          el.style.display = 'none';
+        });
       }
       if (leftGuideLine) {
+        originalDisplays.push({ element: leftGuideLine, display: leftGuideLine.style.display });
         leftGuideLine.style.display = 'none';
       }
       
@@ -32,6 +42,9 @@ export class CVPdfExporter {
 
       const exportWidth = cvElement.scrollWidth;
       const exportHeight = cvElement.scrollHeight;
+      
+      console.log('PDF Export - Element dimensions:', { exportWidth, exportHeight });
+      console.log('PDF Export - Element content:', cvElement.innerHTML.substring(0, 200));
 
       // PDF setup - A4 dimensions in points
       const pdf = new jsPDF({ orientation: 'portrait', unit: 'pt', format: 'a4' });
@@ -51,6 +64,9 @@ export class CVPdfExporter {
       const sections = cvElement.querySelectorAll('[data-section]');
       const bulletPoints = cvElement.querySelectorAll('li[data-break], li');
       const breakPoints = [];
+      
+      console.log('PDF Export - Sections found:', sections.length);
+      console.log('PDF Export - Bullet points found:', bulletPoints.length);
       
       // Add section boundaries
       sections.forEach((section, index) => {
@@ -191,15 +207,9 @@ export class CVPdfExporter {
       cvElement.classList.remove('exporting');
       
       // Restore page break indicators and page numbers visibility
-      if (pageBreakIndicators) {
-        pageBreakIndicators.forEach(el => el.style.display = '');
-      }
-      if (pageNumbers) {
-        pageNumbers.forEach(el => el.style.display = '');
-      }
-      if (leftGuideLine) {
-        leftGuideLine.style.display = '';
-      }
+      originalDisplays.forEach(({ element, display }) => {
+        element.style.display = display;
+      });
       
       console.log(`PDF generated successfully with ${pageNumber - 1} pages`);
 
@@ -209,18 +219,10 @@ export class CVPdfExporter {
         cvElement?.classList.remove('exporting'); 
         
         // Restore page break indicators and page numbers visibility in case of error
-        const pageBreakIndicators = cvElement?.parentElement?.querySelectorAll('[style*="borderTop"][style*="dashed"]');
-        const pageNumbers = cvElement?.parentElement?.querySelectorAll('[style*="backgroundColor"][style*="#3b82f6"]');
-        const leftGuideLine = cvElement?.parentElement?.querySelector('[style*="backgroundColor"][style*="rgba(34, 197, 94"]');
-        
-        if (pageBreakIndicators) {
-          pageBreakIndicators.forEach(el => el.style.display = '');
-        }
-        if (pageNumbers) {
-          pageNumbers.forEach(el => el.style.display = '');
-        }
-        if (leftGuideLine) {
-          leftGuideLine.style.display = '';
+        if (typeof originalDisplays !== 'undefined') {
+          originalDisplays.forEach(({ element, display }) => {
+            element.style.display = display;
+          });
         }
       } catch (e) {
         console.error('Error removing exporting class:', e);
