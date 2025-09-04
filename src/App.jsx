@@ -1,6 +1,6 @@
 import React, { useRef } from 'react';
-import { useCVData } from './hooks/useCVData.js';
-import { CVPdfExporter } from './utils/pdfExporter.js';
+import { useCVData } from './hooks/useCVData.jsx';
+import { CVPdfExporter } from './utils/pdfExporter.jsx';
 import CVBuilderLayout from './components/CVBuilderLayout.jsx';
 import PreviewContainer from './components/PreviewContainer.jsx';
 
@@ -26,12 +26,12 @@ const App = () => {
   return (
     <div className="flex flex-col lg:flex-row h-screen p-4 bg-gray-100 font-sans">
       <CVBuilderLayout
-        cvData={cvData}
-        handleDataChange={handleDataChange}
-        handleAddResponsibility={handleAddResponsibility}
-        handleRemoveResponsibility={handleRemoveResponsibility}
-        handleAddExperience={handleAddExperience}
-        handleRemoveExperience={handleRemoveExperience}
+  cvData={cvData}
+  handleDataChange={handleDataChange}
+  handleAddResponsibility={handleAddResponsibility}
+  handleRemoveResponsibility={handleRemoveResponsibility}
+  handleAddExperience={handleAddExperience}
+  handleRemoveExperience={handleRemoveExperience}
         handleAddEducation={handleAddEducation}
         handleRemoveEducation={handleRemoveEducation}
         handlePdfExport={handlePdfExport}
