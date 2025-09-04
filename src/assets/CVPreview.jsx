@@ -71,9 +71,11 @@ const CVPreview = ({ cvData, cvRef }) => {
             width: '2px',
             height: '100%',
             backgroundColor: 'rgba(34, 197, 94, 0.2)',
-            border: 'none',
+            border: 'none !important',
             margin: '0',
-            padding: '0'
+            padding: '0',
+            outline: 'none !important',
+            boxShadow: 'none !important'
           }}
         />
         

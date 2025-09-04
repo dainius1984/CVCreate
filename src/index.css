@@ -36,10 +36,14 @@
   box-shadow: none !important;
 }
 
-/* Remove borders from all preview containers */
+/* Remove borders from all preview containers and their children */
 .preview-container, .preview-container * {
+  border: none !important;
+  border-top: none !important;
   border-right: none !important;
   border-bottom: none !important;
+  border-left: none !important;
+  outline: none !important;
 }
 
 /* Remove any potential borders from page guides */
@@ -48,7 +52,59 @@
 }
 
 .page-guides * {
+  border: none !important;
+  border-top: none !important;
   border-right: none !important;
   border-bottom: none !important;
+  border-left: none !important;
+}
+
+/* Remove borders from all divs in the preview area */
+#cv-preview div, #cv-preview div * {
+  border: none !important;
   border-top: none !important;
+  border-right: none !important;
+  border-bottom: none !important;
+  border-left: none !important;
+  outline: none !important;
+}
+
+/* Force remove any browser default borders from preview area only */
+#cv-preview, #cv-preview * {
+  border: none !important;
+  border-top: none !important;
+  border-right: none !important;
+  border-bottom: none !important;
+  border-left: none !important;
+  outline: none !important;
+}
+
+/* Remove borders from the main container */
+div[style*="transform: scale"] {
+  border: none !important;
+  border-top: none !important;
+  border-right: none !important;
+  border-bottom: none !important;
+  border-left: none !important;
+  outline: none !important;
+}
+
+/* Remove borders from the relative container */
+div.relative {
+  border: none !important;
+  border-top: none !important;
+  border-right: none !important;
+  border-bottom: none !important;
+  border-left: none !important;
+  outline: none !important;
+}
+
+/* Remove borders from the page guides container */
+div.absolute.inset-0 {
+  border: none !important;
+  border-top: none !important;
+  border-right: none !important;
+  border-bottom: none !important;
+  border-left: none !important;
+  outline: none !important;
 }
