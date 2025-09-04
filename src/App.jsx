@@ -178,10 +178,15 @@ const App = () => {
       // Temporarily add class to remove shadows and guides during capture
       cvElement.classList.add('exporting');
       
-      // Also hide page guides in the parent container
-      const pageGuidesContainer = cvElement.parentElement?.querySelector('.page-guides');
-      if (pageGuidesContainer) {
-        pageGuidesContainer.style.display = 'none';
+      // Hide page break indicators and page numbers during export
+      const pageBreakIndicators = cvElement.parentElement?.querySelectorAll('[style*="borderTop"][style*="dashed"]');
+      const pageNumbers = cvElement.parentElement?.querySelectorAll('[style*="backgroundColor"][style*="#3b82f6"]');
+      
+      if (pageBreakIndicators) {
+        pageBreakIndicators.forEach(el => el.style.display = 'none');
+      }
+      if (pageNumbers) {
+        pageNumbers.forEach(el => el.style.display = 'none');
       }
       
       // Wait a moment for CSS changes to take effect
@@ -348,9 +353,12 @@ const App = () => {
   
       cvElement.classList.remove('exporting');
       
-      // Restore page guides visibility
-      if (pageGuidesContainer) {
-        pageGuidesContainer.style.display = '';
+      // Restore page break indicators and page numbers visibility
+      if (pageBreakIndicators) {
+        pageBreakIndicators.forEach(el => el.style.display = '');
+      }
+      if (pageNumbers) {
+        pageNumbers.forEach(el => el.style.display = '');
       }
       
       console.log(`PDF generated successfully with ${pageNumber - 1} pages`);
@@ -360,10 +368,15 @@ const App = () => {
       try { 
         cvRef.current?.classList.remove('exporting'); 
         
-        // Restore page guides visibility in case of error
-        const pageGuidesContainer = cvRef.current?.parentElement?.querySelector('.page-guides');
-        if (pageGuidesContainer) {
-          pageGuidesContainer.style.display = '';
+        // Restore page break indicators and page numbers visibility in case of error
+        const pageBreakIndicators = cvRef.current?.parentElement?.querySelectorAll('[style*="borderTop"][style*="dashed"]');
+        const pageNumbers = cvRef.current?.parentElement?.querySelectorAll('[style*="backgroundColor"][style*="#3b82f6"]');
+        
+        if (pageBreakIndicators) {
+          pageBreakIndicators.forEach(el => el.style.display = '');
+        }
+        if (pageNumbers) {
+          pageNumbers.forEach(el => el.style.display = '');
         }
       } catch (e) {
         console.error('Error removing exporting class:', e);

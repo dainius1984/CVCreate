@@ -59,61 +59,82 @@ const CVPreview = ({ cvData, cvRef }) => {
 
   return (
     <div className="relative">
-      {/* Page Break Visualization */}
-      <div className="absolute inset-0 pointer-events-none z-40 page-guides">
-        {/* Simple left border line only */}
-        <div 
-          style={{
-            position: 'absolute',
-            left: `${MARGIN_PX}px`,
-            top: '0px',
-            bottom: '0px',
-            width: '2px',
-            height: '100%',
-            backgroundColor: 'rgba(34, 197, 94, 0.2)',
-            border: 'none !important',
-            margin: '0',
-            padding: '0',
-            outline: 'none !important',
-            boxShadow: 'none !important'
-          }}
-        />
+      {/* Simple left guide line only */}
+      <div 
+        style={{
+          position: 'absolute',
+          left: `${MARGIN_PX}px`,
+          top: '0px',
+          bottom: '0px',
+          width: '2px',
+          height: '100%',
+          backgroundColor: 'rgba(34, 197, 94, 0.2)',
+          border: 'none !important',
+          margin: '0',
+          padding: '0',
+          outline: 'none !important',
+          boxShadow: 'none !important',
+          zIndex: 40,
+          pointerEvents: 'none'
+        }}
+      />
         
-        {/* Smart page break indicators */}
-        {pageBreaks.map((pageBreak, i) => (
-          <div key={i}>
-            {/* Break line */}
-            <div
-              className="absolute left-0 right-0 border-t-2 border-red-500 border-dashed"
-              style={{ top: `${pageBreak.yPosition + MARGIN_PX}px` }}
-            />
-            {/* Break label */}
-            <div
-              className="absolute left-2 bg-red-500 text-white text-xs px-2 py-1 rounded shadow z-50"
-              style={{ 
-                top: `${pageBreak.yPosition + MARGIN_PX - 15}px`,
-                fontSize: '10px'
-              }}
-            >
-              📄 {pageBreak.reason}
-            </div>
-          </div>
-        ))}
-        
-        {/* Page numbers */}
-        {Array.from({ length: Math.ceil((contentRef.current?.offsetHeight || 0) / A4_HEIGHT_PX) + 1 }, (_, i) => (
+      {/* Smart page break indicators */}
+      {pageBreaks.map((pageBreak, i) => (
+        <div key={i} style={{ position: 'absolute', zIndex: 50, pointerEvents: 'none' }}>
+          {/* Break line */}
           <div
-            key={i}
-            className="absolute right-2 bg-blue-500 text-white text-xs px-2 py-1 rounded shadow"
             style={{ 
-              top: `${i * A4_HEIGHT_PX + 8}px`,
-              fontSize: '10px'
+              position: 'absolute',
+              left: '0px',
+              right: '0px',
+              top: `${pageBreak.yPosition + MARGIN_PX}px`,
+              borderTop: '2px dashed #ef4444',
+              borderLeft: 'none',
+              borderRight: 'none',
+              borderBottom: 'none'
+            }}
+          />
+          {/* Break label */}
+          <div
+            style={{ 
+              position: 'absolute',
+              left: '8px',
+              top: `${pageBreak.yPosition + MARGIN_PX - 15}px`,
+              backgroundColor: '#ef4444',
+              color: 'white',
+              fontSize: '10px',
+              padding: '4px 8px',
+              borderRadius: '4px',
+              boxShadow: '0 1px 3px rgba(0,0,0,0.1)'
             }}
           >
-            Page {i + 1}
+            📄 {pageBreak.reason}
           </div>
-        ))}
-      </div>
+        </div>
+      ))}
+      
+      {/* Page numbers */}
+      {Array.from({ length: Math.ceil((contentRef.current?.offsetHeight || 0) / A4_HEIGHT_PX) + 1 }, (_, i) => (
+        <div
+          key={i}
+          style={{ 
+            position: 'absolute',
+            right: '8px',
+            top: `${i * A4_HEIGHT_PX + 8}px`,
+            backgroundColor: '#3b82f6',
+            color: 'white',
+            fontSize: '10px',
+            padding: '4px 8px',
+            borderRadius: '4px',
+            boxShadow: '0 1px 3px rgba(0,0,0,0.1)',
+            zIndex: 50,
+            pointerEvents: 'none'
+          }}
+        >
+          Page {i + 1}
+        </div>
+      ))}
 
       {/* CV Content */}
       <div
