@@ -48,6 +48,8 @@ const CVPreview = ({ cvData, cvRef }) => {
       
       setPageBreaks(breaks);
       console.log('Page breaks calculated:', breaks);
+      console.log('Content height:', contentRef.current?.offsetHeight);
+      console.log('A4 height:', A4_HEIGHT_PX);
     };
 
     calculatePageBreaks();

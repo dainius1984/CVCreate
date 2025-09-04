@@ -64,6 +64,22 @@
   box-shadow: none !important;
 }
 
+/* Remove borders from all divs in the preview area only */
+#cv-preview div,
+#cv-preview div * {
+  border: none !important;
+  border-top: none !important;
+  border-right: none !important;
+  border-bottom: none !important;
+  border-left: none !important;
+  outline: none !important;
+}
+
+/* Re-enable borders only for specific elements that need them */
+#cv-preview .border-gray-200 {
+  border-color: #e5e7eb !important;
+}
+
 /* Force remove any potential borders from the CV content area */
 #cv-preview::before,
 #cv-preview::after {
