@@ -175,8 +175,17 @@ const App = () => {
         return;
       }
   
-      // Temporarily add class to remove shadows during capture
+      // Temporarily add class to remove shadows and guides during capture
       cvElement.classList.add('exporting');
+      
+      // Also hide page guides in the parent container
+      const pageGuidesContainer = cvElement.parentElement?.querySelector('.page-guides');
+      if (pageGuidesContainer) {
+        pageGuidesContainer.style.display = 'none';
+      }
+      
+      // Wait a moment for CSS changes to take effect
+      await new Promise(resolve => setTimeout(resolve, 100));
   
       const exportWidth = cvElement.scrollWidth;
       const exportHeight = cvElement.scrollHeight;
@@ -338,12 +347,24 @@ const App = () => {
       pdf.save(fileName);
   
       cvElement.classList.remove('exporting');
+      
+      // Restore page guides visibility
+      if (pageGuidesContainer) {
+        pageGuidesContainer.style.display = '';
+      }
+      
       console.log(`PDF generated successfully with ${pageNumber - 1} pages`);
   
     } catch (error) {
       console.error('Failed to generate PDF:', error);
       try { 
         cvRef.current?.classList.remove('exporting'); 
+        
+        // Restore page guides visibility in case of error
+        const pageGuidesContainer = cvRef.current?.parentElement?.querySelector('.page-guides');
+        if (pageGuidesContainer) {
+          pageGuidesContainer.style.display = '';
+        }
       } catch (e) {
         console.error('Error removing exporting class:', e);
       }

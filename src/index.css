@@ -15,6 +15,7 @@
 
 .page-guides { display: block; }
 .exporting .page-guides, #cv-preview.exporting ~ .page-guides { display: none !important; }
+.exporting .page-guides * { display: none !important; }
 
 .exporting {
     box-shadow: none !important;
@@ -24,6 +25,16 @@
     box-shadow: none !important;
     text-shadow: none !important;
   }
+
+/* Hide all guide elements during export */
+.exporting .page-guides,
+.exporting .page-guides *,
+.exporting [class*="page-guides"],
+.exporting [class*="guide"] {
+  display: none !important;
+  visibility: hidden !important;
+  opacity: 0 !important;
+}
 
 /* Remove all borders from CV preview */
 #cv-preview {
