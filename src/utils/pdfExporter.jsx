@@ -87,8 +87,8 @@ export class CVPdfExporter {
       
       // Contact information with better formatting
       const contactInfo = [];
-      if (cvData.phone) contactInfo.push(`📞 ${cvData.phone}`);
-      if (cvData.email) contactInfo.push(`✉️ ${cvData.email}`);
+      if (cvData.phone) contactInfo.push(`Phone: ${cvData.phone}`);
+      if (cvData.email) contactInfo.push(`Email: ${cvData.email}`);
       if (contactInfo.length > 0) {
         addText(contactInfo.join('  •  '), 11, false, '#6b7280');
         currentY += 16;
@@ -100,14 +100,14 @@ export class CVPdfExporter {
 
       // Summary Section
       if (cvData.summary) {
-        addSectionHeader('📝 Summary');
+        addSectionHeader('Summary');
         addText(cvData.summary, 11, false, '#374151');
         currentY += 8;
       }
 
       // Education Section
       if (cvData.education && cvData.education.length > 0) {
-        addSectionHeader('🎓 Education');
+        addSectionHeader('Education');
         cvData.education.forEach((edu, index) => {
           if (edu.degree || edu.university) {
             // Degree and University
@@ -137,7 +137,7 @@ export class CVPdfExporter {
 
       // Professional Experience Section
       if (cvData.experience && cvData.experience.length > 0) {
-        addSectionHeader('💼 Professional Experience');
+        addSectionHeader('Professional Experience');
         cvData.experience.forEach((exp, index) => {
           if (exp.jobTitle || exp.company) {
             // Job Title and Company
@@ -177,7 +177,7 @@ export class CVPdfExporter {
 
       // Skills Section
       if (cvData.skills) {
-        addSectionHeader('🛠️ Skills');
+        addSectionHeader('Skills');
         
         if (cvData.skills.technical) {
           addText('Technical Skills:', 11, true, '#1f2937');
