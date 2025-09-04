@@ -61,13 +61,19 @@ const CVPreview = ({ cvData, cvRef }) => {
     <div className="relative">
       {/* Page Break Visualization */}
       <div className="absolute inset-0 pointer-events-none z-40 page-guides">
-        {/* Content area guides - only left border */}
+        {/* Simple left border line only */}
         <div 
-          className="opacity-20 border-l-2 border-dashed border-green-500"
           style={{
-            marginLeft: `${MARGIN_PX}px`,
-            marginRight: `${MARGIN_PX}px`,
-            height: '200%'
+            position: 'absolute',
+            left: `${MARGIN_PX}px`,
+            top: '0px',
+            bottom: '0px',
+            width: '2px',
+            height: '100%',
+            backgroundColor: 'rgba(34, 197, 94, 0.2)',
+            border: 'none',
+            margin: '0',
+            padding: '0'
           }}
         />
         

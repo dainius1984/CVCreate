@@ -391,7 +391,7 @@ const App = () => {
           style={{
             transform: `scale(${previewScale})`,
             transformOrigin: 'top center',
-            backgroundImage: guideHeightPx > 0 ? `repeating-linear-gradient(to bottom, rgba(59,130,246,0.2) 0, rgba(59,130,246,0.2) 1px, transparent 1px, transparent ${guideHeightPx}px)` : undefined,
+            backgroundImage: 'none'
           }}
         >
         <CVPreview cvData={cvData} cvRef={cvRef} />

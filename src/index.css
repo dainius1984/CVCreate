@@ -35,3 +35,20 @@
   outline: none !important;
   box-shadow: none !important;
 }
+
+/* Remove borders from all preview containers */
+.preview-container, .preview-container * {
+  border-right: none !important;
+  border-bottom: none !important;
+}
+
+/* Remove any potential borders from page guides */
+.page-guides {
+  border: none !important;
+}
+
+.page-guides * {
+  border-right: none !important;
+  border-bottom: none !important;
+  border-top: none !important;
+}
