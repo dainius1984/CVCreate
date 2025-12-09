@@ -10,8 +10,6 @@ import Skills from './form/Skills.jsx';
 const CVForm = ({ 
   cvData, 
   handleDataChange, 
-  handleAddResponsibility, 
-  handleRemoveResponsibility, 
   handleAddExperience, 
   handleRemoveExperience,
   handleAddEducation,
@@ -39,20 +37,20 @@ const CVForm = ({
       </div>
 
       <div className="pt-6 mt-6 border-t border-gray-200">
-        <Education
-          education={cvData.education}
-          onChange={handleDataChange}
-          onAddEducation={handleAddEducation}
-          onRemoveEducation={handleRemoveEducation}
-        />
-      </div>
-
-      <div className="pt-6 mt-6 border-t border-gray-200">
         <Experience
           experience={cvData.experience}
           onChange={handleDataChange}
           onAddExperience={handleAddExperience}
           onRemoveExperience={handleRemoveExperience}
+        />
+      </div>
+
+      <div className="pt-6 mt-6 border-t border-gray-200">
+        <Education
+          education={cvData.education}
+          onChange={handleDataChange}
+          onAddEducation={handleAddEducation}
+          onRemoveEducation={handleRemoveEducation}
         />
       </div>
 

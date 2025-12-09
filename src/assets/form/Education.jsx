@@ -23,10 +23,21 @@ const Education = ({ education, onChange, onAddEducation, onRemoveEducation }) =
             <span className="text-gray-700">City, State</span>
             <input type="text" value={ed.cityState} onChange={(e)=>onChange(`education.${idx}.cityState`, e.target.value)} className="mt-1 block w-full rounded-md border-gray-300 shadow-sm p-2"/>
           </label>
-          <label className="block">
+          <label className="block mb-2">
             <span className="text-gray-700">Graduation Year</span>
             <input type="text" value={ed.year} onChange={(e)=>onChange(`education.${idx}.year`, e.target.value)} className="mt-1 block w-full rounded-md border-gray-300 shadow-sm p-2"/>
           </label>
+          <div className="mt-4">
+            <h4 className="text-md font-medium text-gray-700 mb-2">Description</h4>
+            <p className="text-sm text-gray-500 mb-1">One point per line. Use Shift+Enter for new line.</p>
+            <textarea
+              rows={4}
+              value={(ed.description || []).join('\n')}
+              onChange={(e) => onChange(`education.${idx}.description`, e.target.value.split(/\r?\n/))}
+              className="w-full rounded-md border-gray-300 shadow-sm p-2 text-sm"
+              placeholder="Strong foundation in core programming concepts...\nProficient in fundamental software engineering..."
+            />
+          </div>
         </div>
       ))}
       <button onClick={onAddEducation} className="w-full bg-blue-600 text-white py-2 rounded-lg shadow-md hover:bg-blue-700 transition duration-300">+ Add Education</button>

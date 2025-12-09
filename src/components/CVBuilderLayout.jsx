@@ -27,8 +27,6 @@ const CVBuilderLayout = ({
         <CVForm
           cvData={cvData}
           handleDataChange={handleDataChange}
-          handleAddResponsibility={handleAddResponsibility}
-          handleRemoveResponsibility={handleRemoveResponsibility}
           handleAddExperience={handleAddExperience}
           handleRemoveExperience={handleRemoveExperience}
           handleAddEducation={handleAddEducation}

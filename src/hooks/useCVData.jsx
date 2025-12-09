@@ -1,36 +1,31 @@
 import { useState } from 'react';
 
 const initialCVData = {
-  name: 'Your Name',
+  name: 'Marcin Chmielnicki',
   title: '',
   photoUrl: 'https://placehold.co/150x150/e2e8f0/64748b?text=Your+Photo',
-  phone: '[Phone Number]',
-  email: '[Email Address]',
-  summary: 'A highly motivated and results-driven professional with a passion for [Your Industry]. Adept at [Key Skill 1] and [Key Skill 2], with a proven track record of [Specific Achievement]. Seeking to leverage my expertise to contribute to the success of a dynamic team.',
-  experience: [
+  phone: '+ 48 532 690 876',
+  email: 'marcinarturchmielnicki@gmail.com',
+  summary: '',
+  experience: [],
+  education: [
     {
-      jobTitle: '[Job Title]',
-      company: '[Company Name]',
-      cityState: '[City, State]',
-      dates: '[Start Date] – [End Date]',
-      responsibilities: [
-        'Used [Action Verb] to achieve [Specific Result], leading to a [Quantifiable Outcome, e.g., "15% increase in efficiency"].',
-        'Collaborated with [Number] of team members to successfully [Accomplishment].',
+      degree: 'Engineering',
+      university: 'University of Edinburgh',
+      cityState: 'Edinburgh, UK',
+      year: '2012',
+      description: [
+        'Strong foundation in core programming concepts including data structures, algorithms, and object-oriented design principles.',
+        'Proficient in fundamental software engineering practices with emphasis on clean code architecture and system design.',
+        'Solid understanding of computational thinking and problem-solving methodologies applied to engineering challenges.',
+        'Well-versed in foundational programming languages and development tools essential for software engineering.',
       ],
     },
   ],
-  education: [
-    {
-      degree: '[Degree Name]',
-      university: '[University Name]',
-      cityState: '[City, State]',
-      year: '[Graduation Year]',
-    },
-  ],
   skills: {
-    technical: '[List specific software, programming languages, or tools, e.g., JavaScript, Python, Salesforce]',
-    soft: '[List key interpersonal and communication skills, e.g., Communication, Problem-solving, Teamwork]',
-    languages: '[List any languages you speak and your level of proficiency]',
+    technical: '',
+    soft: '',
+    languages: '',
   },
 };
 
@@ -111,7 +106,7 @@ export const useCVData = () => {
       ...prev,
       education: [
         ...prev.education,
-        { degree: '', university: '', cityState: '', year: '' },
+        { degree: '', university: '', cityState: '', year: '', description: [] },
       ],
     }));
   };
@@ -126,14 +121,22 @@ export const useCVData = () => {
 
   const importCVData = (data) => {
     setCvData({
-      name: data.name || 'Your Name',
+      name: data.name || 'Marcin Chmielnicki',
       title: data.title || '',
       photoUrl: data.photoUrl || 'https://placehold.co/150x150/e2e8f0/64748b?text=Your+Photo',
-      phone: data.phone || '[Phone Number]',
-      email: data.email || '[Email Address]',
+      phone: data.phone || '+ 48 532 690 876',
+      email: data.email || 'marcinarturchmielnicki@gmail.com',
       summary: data.summary || '',
       experience: Array.isArray(data.experience) ? data.experience : [],
-      education: Array.isArray(data.education) ? data.education : [],
+      education: Array.isArray(data.education) 
+        ? data.education.map(ed => ({
+            degree: ed.degree || '',
+            university: ed.university || '',
+            cityState: ed.cityState || '',
+            year: ed.year || '',
+            description: Array.isArray(ed.description) ? ed.description : []
+          }))
+        : [],
       skills: data.skills || {},
     });
   };

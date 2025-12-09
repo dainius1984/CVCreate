@@ -163,31 +163,6 @@ const CVPreview = ({ cvData, cvRef }) => {
             </section>
           )}
 
-          {/* Education */}
-          {cvData.education && cvData.education.length > 0 && (
-            <section 
-              data-section="education"
-              className="mb-8"
-              style={{ 
-                paddingBottom: '20px',
-                borderBottom: '1px solid #e5e7eb'
-              }}
-            >
-              <h2 className="text-xl font-bold text-gray-800 mb-1">Education</h2>
-              <div style={{ width: '180px', height: '2px', backgroundColor: '#2563eb', marginBottom: '12px' }} />
-              {cvData.education.map((ed, i) => (
-                <div key={i} className="mb-3 last:mb-0" data-section={`education-item-${i}`}>
-                  <h3 className="text-lg font-semibold text-gray-800">
-                    {ed.degree || '[Degree Name]'} | {ed.university || '[University Name]'}, {ed.cityState || '[City, State]'}
-                  </h3>
-                  <p className="text-gray-500 text-sm italic">
-                    {ed.year || '[Graduation Year]'}
-                  </p>
-                </div>
-              ))}
-            </section>
-          )}
-
           {/* Professional Experience */}
           {cvData.experience && cvData.experience.length > 0 && (
             <section data-section="experience" className="mb-6">
@@ -224,6 +199,40 @@ const CVPreview = ({ cvData, cvRef }) => {
               ))}
               
               <div style={{ borderBottom: '1px solid #e5e7eb', marginTop: '16px' }} />
+            </section>
+          )}
+
+          {/* Education */}
+          {cvData.education && cvData.education.length > 0 && (
+            <section 
+              data-section="education"
+              className="mb-8"
+              style={{ 
+                paddingBottom: '20px',
+                borderBottom: '1px solid #e5e7eb'
+              }}
+            >
+              <h2 className="text-xl font-bold text-gray-800 mb-1">Education</h2>
+              <div style={{ width: '180px', height: '2px', backgroundColor: '#2563eb', marginBottom: '12px' }} />
+              {cvData.education.map((ed, i) => (
+                <div key={i} className="mb-3 last:mb-0" data-section={`education-item-${i}`}>
+                  <h3 className="text-lg font-semibold text-gray-800">
+                    {ed.degree || '[Degree Name]'} | {ed.university || '[University Name]'}, {ed.cityState || '[City, State]'}
+                  </h3>
+                  <p className="text-gray-500 text-sm italic mb-2">
+                    {ed.year || '[Graduation Year]'}
+                  </p>
+                  {ed.description && ed.description.length > 0 && ed.description.some(d => d.trim()) && (
+                    <ul className="list-disc list-inside space-y-1 text-gray-700 text-sm" style={{ '--tw-prose-bullets': '#2563eb' }}>
+                      {ed.description.filter(d => d.trim()).map((desc, descIndex) => (
+                        <li key={descIndex} className="leading-relaxed">
+                          {desc}
+                        </li>
+                      ))}
+                    </ul>
+                  )}
+                </div>
+              ))}
             </section>
           )}
           
