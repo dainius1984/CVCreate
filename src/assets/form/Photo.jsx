@@ -1,7 +1,9 @@
 import React, { useCallback, useRef, useState } from 'react';
+import { useLanguage } from '../../contexts/LanguageContext.jsx';
 import Cropper from 'react-easy-crop';
 
 const Photo = ({ photoUrl, onChange, onCroppedChange }) => {
+  const { t, language } = useLanguage();
   const [imageSrc, setImageSrc] = useState(photoUrl || '');
   const [crop, setCrop] = useState({ x: 0, y: 0 });
   const [zoom, setZoom] = useState(1);
@@ -74,7 +76,7 @@ const Photo = ({ photoUrl, onChange, onCroppedChange }) => {
 
   return (
     <div className="mb-6">
-      <h2 className="text-xl font-semibold text-gray-700 mb-3">Photo</h2>
+      <h2 className="text-xl font-semibold text-gray-700 mb-3">{t('photo')}</h2>
 
       <div
         className="w-full border-2 border-dashed rounded-lg p-4 text-center text-gray-600 hover:border-gray-400 transition cursor-pointer"
@@ -82,7 +84,7 @@ const Photo = ({ photoUrl, onChange, onCroppedChange }) => {
         onDrop={onDrop}
         onClick={() => fileInputRef.current?.click()}
       >
-        Drag & drop an image here, or click to select
+        {language === 'pl' ? 'Przeciągnij i upuść zdjęcie tutaj lub kliknij, aby wybrać' : 'Drag & drop an image here, or click to select'}
         <input ref={fileInputRef} type="file" accept="image/*" className="hidden" onChange={onFileSelect} />
       </div>
 
@@ -111,14 +113,14 @@ const Photo = ({ photoUrl, onChange, onCroppedChange }) => {
             onClick={createCircularCroppedImage}
             className="ml-auto bg-emerald-600 text-white px-3 py-2 rounded-md text-sm hover:bg-emerald-700"
           >
-            Apply Crop
+            {language === 'pl' ? 'Zastosuj przycięcie' : 'Apply Crop'}
           </button>
         </div>
       )}
 
       <div className="mt-4">
         <label className="block">
-          <span className="text-gray-700">Or use Photo URL</span>
+          <span className="text-gray-700">{language === 'pl' ? 'Lub użyj URL zdjęcia' : 'Or use Photo URL'}</span>
           <input
             type="text"
             name="photoUrl"

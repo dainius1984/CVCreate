@@ -1,7 +1,9 @@
 // src/CVPreview.jsx
 import React, { useEffect, useRef, useState } from 'react';
+import { useLanguage } from '../contexts/LanguageContext.jsx';
 
 const CVPreview = ({ cvData, cvRef }) => {
+  const { t } = useLanguage();
   const contentRef = useRef(null);
   const [pages, setPages] = useState(1);
   
@@ -157,48 +159,9 @@ const CVPreview = ({ cvData, cvRef }) => {
                 paddingBottom: '20px'
               }}
             >
-              <h2 className="text-xl font-bold text-gray-800 mb-1">Summary</h2>
+              <h2 className="text-xl font-bold text-gray-800 mb-1">{t('summary')}</h2>
               <div style={{ width: '180px', height: '2px', backgroundColor: '#2563eb', marginBottom: '12px' }} />
               <p className="text-gray-700 leading-relaxed text-sm">{cvData.summary}</p>
-            </section>
-          )}
-
-          {/* Professional Experience */}
-          {cvData.experience && cvData.experience.length > 0 && (
-            <section data-section="experience" className="mb-6">
-              <h2 className="text-xl font-bold text-gray-800 mb-1">Professional Experience</h2>
-              <div style={{ width: '220px', height: '2px', backgroundColor: '#2563eb', marginBottom: '12px' }} />
-              
-              {cvData.experience.map((exp, expIndex) => (
-                <div 
-                  key={expIndex} 
-                  data-section={`experience-${expIndex}`}
-                  className="mb-6 last:mb-4"
-                >
-                  <h3 className="text-lg font-semibold text-gray-800 mb-1">
-                    {exp.jobTitle || '[Job Title]'} | {exp.company || '[Company Name]'}, {exp.cityState || '[City, State]'}
-                  </h3>
-                  <p className="text-gray-500 text-sm italic mb-2">
-                    {exp.dates || '[Start Date] - [End Date]'}
-                  </p>
-                  
-                  {exp.responsibilities && exp.responsibilities.length > 0 && (
-                    <ul className="list-disc list-inside space-y-1 text-gray-700 text-sm" style={{ '--tw-prose-bullets': '#2563eb' }}>
-                      {exp.responsibilities.map((resp, respIndex) => (
-                        <li key={respIndex} className="leading-relaxed" data-break>
-                          {resp}
-                        </li>
-                      ))}
-                    </ul>
-                  )}
-                  
-                  {expIndex < cvData.experience.length - 1 && (
-                    <div className="mt-4 pt-3 border-t border-gray-200" />
-                  )}
-                </div>
-              ))}
-              
-              <div style={{ borderBottom: '1px solid #e5e7eb', marginTop: '16px' }} />
             </section>
           )}
 
@@ -212,56 +175,150 @@ const CVPreview = ({ cvData, cvRef }) => {
                 borderBottom: '1px solid #e5e7eb'
               }}
             >
-              <h2 className="text-xl font-bold text-gray-800 mb-1">Education</h2>
+              <h2 className="text-xl font-bold text-gray-800 mb-1">{t('education')}</h2>
               <div style={{ width: '180px', height: '2px', backgroundColor: '#2563eb', marginBottom: '12px' }} />
               {cvData.education.map((ed, i) => (
                 <div key={i} className="mb-3 last:mb-0" data-section={`education-item-${i}`}>
                   <h3 className="text-lg font-semibold text-gray-800">
                     {ed.degree || '[Degree Name]'} | {ed.university || '[University Name]'}, {ed.cityState || '[City, State]'}
                   </h3>
-                  <p className="text-gray-500 text-sm italic mb-2">
+                  <p className="text-gray-500 text-sm italic">
                     {ed.year || '[Graduation Year]'}
                   </p>
-                  {ed.description && ed.description.length > 0 && ed.description.some(d => d.trim()) && (
-                    <ul className="list-disc list-inside space-y-1 text-gray-700 text-sm" style={{ '--tw-prose-bullets': '#2563eb' }}>
-                      {ed.description.filter(d => d.trim()).map((desc, descIndex) => (
-                        <li key={descIndex} className="leading-relaxed">
-                          {desc}
-                        </li>
-                      ))}
-                    </ul>
-                  )}
                 </div>
               ))}
             </section>
           )}
+
+          {/* Professional Experience */}
+          {cvData.experience && (() => {
+            // Filter out empty experiences or those with only placeholder values
+            const validExperiences = cvData.experience.filter(exp => {
+              const hasJobTitle = exp.jobTitle && exp.jobTitle.trim() && !exp.jobTitle.includes('[Job Title]');
+              const hasCompany = exp.company && exp.company.trim() && !exp.company.includes('[Company');
+              return hasJobTitle || hasCompany;
+            });
+            
+            if (validExperiences.length === 0) return null;
+            
+            return (
+              <section data-section="experience" className="mb-6">
+                <h2 className="text-xl font-bold text-gray-800 mb-1">{t('experience')}</h2>
+                <div style={{ width: '220px', height: '2px', backgroundColor: '#2563eb', marginBottom: '12px' }} />
+                
+                {validExperiences.map((exp, expIndex) => {
+                  const jobTitle = exp.jobTitle && !exp.jobTitle.includes('[Job Title]') ? exp.jobTitle : '';
+                  const company = exp.company && !exp.company.includes('[Company') ? exp.company : '';
+                  const cityState = exp.cityState && !exp.cityState.includes('[City') ? exp.cityState : '';
+                  const dates = exp.dates && !exp.dates.includes('[Start Date]') ? exp.dates : '';
+                  
+                  const titleParts = [];
+                  if (jobTitle) titleParts.push(jobTitle);
+                  if (company) titleParts.push(company);
+                  if (cityState) titleParts.push(cityState);
+                  
+                  return (
+                    <div 
+                      key={expIndex} 
+                      data-section={`experience-${expIndex}`}
+                      className="mb-3 last:mb-4"
+                    >
+                      {titleParts.length > 0 && (
+                        <h3 className="text-lg font-semibold text-gray-800 mb-1">
+                          {titleParts.join(' | ')}
+                        </h3>
+                      )}
+                      {dates && (
+                        <p className="text-gray-500 text-sm italic mb-2">
+                          {dates}
+                        </p>
+                      )}
+                  
+                  {exp.responsibilities && exp.responsibilities.length > 0 && (
+                    <ul className="list-disc list-inside space-y-1 text-gray-700 text-sm" style={{ '--tw-prose-bullets': '#2563eb' }}>
+                      {exp.responsibilities.map((resp, respIndex) => (
+                        <li key={respIndex} className="leading-relaxed" data-break>
+                          {resp}
+                        </li>
+                      ))}
+                    </ul>
+                  )}
+                  
+                      {expIndex < validExperiences.length - 1 && (
+                        <div className="mt-2 pt-2 border-t border-gray-200" />
+                      )}
+                    </div>
+                  );
+                })}
+                
+                <div style={{ borderBottom: '1px solid #e5e7eb', marginTop: '16px' }} />
+              </section>
+            );
+          })()}
           
           {/* Skills */}
-          <section data-section="skills">
-            <h2 className="text-xl font-bold text-gray-800 mb-3">Skills</h2>
-            <div className="space-y-3">
-              {cvData.skills?.technical && (
-                <div>
-                  <h3 className="text-base font-semibold text-gray-700">Technical Skills:</h3>
-                  <p className="text-gray-600 text-sm leading-relaxed">{cvData.skills.technical}</p>
+          {cvData.skills && (() => {
+            const hasSection = (sectionId) => {
+              if (sectionId === 'technical') return cvData.skills.technical && cvData.skills.technical !== null;
+              if (sectionId === 'soft') return cvData.skills.soft && cvData.skills.soft !== null;
+              if (sectionId === 'languages') return cvData.skills.languages && cvData.skills.languages !== null;
+              if (sectionId.startsWith('custom-')) {
+                const idx = parseInt(sectionId.split('-')[1]);
+                return cvData.skills.custom?.[idx]?.title && cvData.skills.custom[idx].content;
+              }
+              return false;
+            };
+
+            const getSectionTitle = (sectionId) => {
+              if (sectionId === 'technical') return t('technicalSkills');
+              if (sectionId === 'soft') return t('softSkills');
+              if (sectionId === 'languages') return t('languages');
+              if (sectionId.startsWith('custom-')) {
+                const idx = parseInt(sectionId.split('-')[1]);
+                return cvData.skills.custom?.[idx]?.title || '';
+              }
+              return '';
+            };
+
+            const getSectionContent = (sectionId) => {
+              if (sectionId === 'technical') return cvData.skills.technical;
+              if (sectionId === 'soft') return cvData.skills.soft;
+              if (sectionId === 'languages') return cvData.skills.languages;
+              if (sectionId.startsWith('custom-')) {
+                const idx = parseInt(sectionId.split('-')[1]);
+                return cvData.skills.custom?.[idx]?.content || '';
+              }
+              return '';
+            };
+
+            const order = cvData.skills.order || ['technical', 'soft', 'languages'];
+            const visibleSections = order.filter(hasSection);
+            
+            if (visibleSections.length === 0) return null;
+
+            const sectionTitle = cvData.skills.title || t('competencies');
+
+            return (
+              <section data-section="skills">
+                <h2 className="text-xl font-bold text-gray-800 mb-1">{sectionTitle}</h2>
+                <div style={{ width: '180px', height: '2px', backgroundColor: '#2563eb', marginBottom: '12px' }} />
+                <div className="space-y-3">
+                  {visibleSections.map((sectionId) => {
+                    const title = getSectionTitle(sectionId);
+                    const content = getSectionContent(sectionId);
+                    if (!title || !content) return null;
+                    
+                    return (
+                      <div key={sectionId}>
+                        <h3 className="text-base font-semibold text-gray-700">{title}:</h3>
+                        <p className="text-gray-600 text-sm leading-relaxed whitespace-pre-line">{content}</p>
+                      </div>
+                    );
+                  })}
                 </div>
-              )}
-              
-              {cvData.skills?.soft && (
-                <div>
-                  <h3 className="text-base font-semibold text-gray-700">Soft Skills:</h3>
-                  <p className="text-gray-600 text-sm leading-relaxed">{cvData.skills.soft}</p>
-                </div>
-              )}
-              
-              {cvData.skills?.languages && (
-                <div>
-                  <h3 className="text-base font-semibold text-gray-700">Languages:</h3>
-                  <p className="text-gray-600 text-sm leading-relaxed">{cvData.skills.languages}</p>
-                </div>
-              )}
-            </div>
-          </section>
+              </section>
+            );
+          })()}
         </div>
       </div>
     </div>

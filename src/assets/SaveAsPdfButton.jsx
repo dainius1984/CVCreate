@@ -1,6 +1,9 @@
 import React from 'react';
+import { useLanguage } from '../contexts/LanguageContext.jsx';
 
 const SaveAsPdfButton = ({ onClick }) => {
+  const { t } = useLanguage();
+  
   return (
     <button
       type="button"
@@ -14,7 +17,7 @@ const SaveAsPdfButton = ({ onClick }) => {
       }}
       className="w-full bg-emerald-600 text-white py-3 rounded-lg shadow-md hover:bg-emerald-700 transition duration-300 font-bold mt-4"
     >
-      Save as PDF
+      {t('saveAsPdf')}
     </button>
   );
 };

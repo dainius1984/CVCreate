@@ -1,16 +1,19 @@
 import React from 'react';
+import { useLanguage } from '../../contexts/LanguageContext.jsx';
 
 const PersonalInfo = ({ name, title, email, phone, onChange }) => {
+  const { t, language } = useLanguage();
+  
   return (
     <div className="mb-6">
       <div className="flex items-center justify-between mb-3">
-        <h2 className="text-xl font-semibold text-gray-700">Personal Information</h2>
-        <span className="text-xs text-gray-500">Shown at the top of your CV</span>
+        <h2 className="text-xl font-semibold text-gray-700">{t('personalInfo')}</h2>
+        <span className="text-xs text-gray-500">{language === 'pl' ? 'Wyświetlane na górze CV' : 'Shown at the top of your CV'}</span>
       </div>
 
       <div className="space-y-4">
         <label className="block">
-          <span className="text-gray-700">Full Name</span>
+          <span className="text-gray-700">{t('name')}</span>
           <input
             type="text"
             name="name"
@@ -22,21 +25,21 @@ const PersonalInfo = ({ name, title, email, phone, onChange }) => {
         </label>
 
         <label className="block">
-          <span className="text-gray-700">Title</span>
+          <span className="text-gray-700">{t('title')}</span>
           <input
             type="text"
             name="title"
             value={title}
-            placeholder="e.g., Data Engineer"
+            placeholder={language === 'pl' ? 'np. Inżynier danych' : 'e.g., Data Engineer'}
             onChange={(e) => onChange('title', e.target.value)}
             className="mt-1 block w-full rounded-md border-gray-300 shadow-sm p-2"
           />
-          <span className="text-xs text-gray-500">Appears under your name (optional)</span>
+          <span className="text-xs text-gray-500">{language === 'pl' ? 'Wyświetlane pod imieniem (opcjonalne)' : 'Appears under your name (optional)'}</span>
         </label>
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <label className="block">
-            <span className="text-gray-700">Email</span>
+            <span className="text-gray-700">{t('email')}</span>
             <input
               type="email"
               name="email"
@@ -47,7 +50,7 @@ const PersonalInfo = ({ name, title, email, phone, onChange }) => {
             />
           </label>
           <label className="block">
-            <span className="text-gray-700">Phone Number</span>
+            <span className="text-gray-700">{t('phone')}</span>
             <input
               type="tel"
               name="phone"

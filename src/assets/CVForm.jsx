@@ -10,10 +10,17 @@ import Skills from './form/Skills.jsx';
 const CVForm = ({ 
   cvData, 
   handleDataChange, 
+  handleAddResponsibility, 
+  handleRemoveResponsibility, 
   handleAddExperience, 
   handleRemoveExperience,
   handleAddEducation,
-  handleRemoveEducation
+  handleRemoveEducation,
+  handleRemoveEducationSection,
+  handleAddCustomSkill,
+  handleRemoveCustomSkill,
+  handleRemoveSkillSection,
+  handleMoveSkillSection
 }) => {
   return (
     <div>
@@ -37,6 +44,16 @@ const CVForm = ({
       </div>
 
       <div className="pt-6 mt-6 border-t border-gray-200">
+        <Education
+          education={cvData.education}
+          onChange={handleDataChange}
+          onAddEducation={handleAddEducation}
+          onRemoveEducation={handleRemoveEducation}
+          onRemoveEducationSection={handleRemoveEducationSection}
+        />
+      </div>
+
+      <div className="pt-6 mt-6 border-t border-gray-200">
         <Experience
           experience={cvData.experience}
           onChange={handleDataChange}
@@ -46,16 +63,12 @@ const CVForm = ({
       </div>
 
       <div className="pt-6 mt-6 border-t border-gray-200">
-        <Education
-          education={cvData.education}
+        <Skills 
+          skills={cvData.skills} 
           onChange={handleDataChange}
-          onAddEducation={handleAddEducation}
-          onRemoveEducation={handleRemoveEducation}
+          onAddCustomSkill={handleAddCustomSkill}
+          onRemoveCustomSkill={handleRemoveCustomSkill}
         />
-      </div>
-
-      <div className="pt-6 mt-6 border-t border-gray-200">
-        <Skills skills={cvData.skills} onChange={handleDataChange} />
       </div>
     </div>
   );

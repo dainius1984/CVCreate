@@ -1,6 +1,8 @@
 import React, { useRef } from 'react';
+import { useLanguage } from '../contexts/LanguageContext.jsx';
 
 const ImportJsonButton = ({ onImport }) => {
+  const { t } = useLanguage();
   const inputRef = useRef(null);
 
   const handleClick = () => inputRef.current?.click();
@@ -34,7 +36,7 @@ const ImportJsonButton = ({ onImport }) => {
         onClick={handleClick}
         className="inline-flex items-center px-3 py-2 rounded-md text-sm font-medium bg-gray-600 text-white hover:bg-gray-700 focus:outline-none"
       >
-        Import JSON
+        {t('importJson')}
       </button>
     </div>
   );

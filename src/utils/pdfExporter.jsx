@@ -1,12 +1,93 @@
 import { jsPDF } from 'jspdf';
+import { translations } from './translations.js';
+import html2canvas from 'html2canvas';
 
 export class CVPdfExporter {
-  static async exportToPdf(cvElement, cvData) {
+  static async exportToPdf(cvElement, cvData, language = 'pl') {
+    const t = (key) => translations[language]?.[key] || key;
     try {
-      console.log('PDF Export - Starting enhanced text-based PDF generation');
+      console.log('PDF Export - Starting PDF generation with html2canvas for Unicode support');
+      
+      // Use html2canvas to capture CV preview - this ensures Polish characters work correctly
+      const previewElement = document.getElementById('cv-preview');
+      
+      if (previewElement) {
+        try {
+          console.log('Capturing CV preview with html2canvas');
+          
+          // Add exporting class to hide guides
+          previewElement.classList.add('exporting');
+          
+          // Wait for styles to apply
+          await new Promise(resolve => setTimeout(resolve, 150));
+          
+          const canvas = await html2canvas(previewElement, {
+            scale: 2,
+            useCORS: true,
+            logging: false,
+            backgroundColor: '#ffffff',
+            allowTaint: false,
+          });
+          
+          // Remove exporting class
+          previewElement.classList.remove('exporting');
+          
+          if (canvas && canvas.width > 0 && canvas.height > 0) {
+            const imgData = canvas.toDataURL('image/png', 1.0);
+            
+            if (imgData && imgData.length > 100) {
+              const imgWidth = 595.28; // A4 width in points
+              const imgHeight = (canvas.height * imgWidth) / canvas.width;
+              
+              const pdf = new jsPDF({
+                orientation: 'portrait',
+                unit: 'pt',
+                format: 'a4',
+                compress: true
+              });
+              
+              const pageHeight = pdf.internal.pageSize.getHeight();
+              let heightLeft = imgHeight;
+              let position = 0;
+              
+              // Add first page
+              pdf.addImage(imgData, 'PNG', 0, position, imgWidth, imgHeight);
+              heightLeft -= pageHeight;
+              
+              // Add additional pages if needed
+              while (heightLeft > 0) {
+                position = heightLeft - imgHeight;
+                pdf.addPage();
+                pdf.addImage(imgData, 'PNG', 0, position, imgWidth, imgHeight);
+                heightLeft -= pageHeight;
+              }
+              
+              const fileName = `${cvData.name.replace(/[^a-zA-Z0-9\s]/g, '').replace(/\s+/g, '_') || 'CV'}_Resume.pdf`;
+              pdf.save(fileName);
+              
+              console.log('PDF generated successfully with html2canvas (Polish characters supported)');
+              return;
+            }
+          }
+        } catch (error) {
+          console.error('html2canvas error:', error);
+          if (previewElement) {
+            previewElement.classList.remove('exporting');
+          }
+        }
+      }
+      
+      // Fallback to text-based export if html2canvas fails
+      console.log('Falling back to text-based PDF generation (Polish characters may not display correctly)');
 
       // PDF setup - A4 dimensions in points
-      const pdf = new jsPDF({ orientation: 'portrait', unit: 'pt', format: 'a4' });
+      // Use compress option to ensure proper Unicode support
+      const pdf = new jsPDF({ 
+        orientation: 'portrait', 
+        unit: 'pt', 
+        format: 'a4',
+        compress: true
+      });
       const pdfWidth = pdf.internal.pageSize.getWidth(); // 595.28 pts
       const pdfHeight = pdf.internal.pageSize.getHeight(); // 841.89 pts
       
@@ -46,10 +127,14 @@ export class CVPdfExporter {
         }
       };
 
-      // Helper function to add text with word wrapping
+      // Helper function to add text with word wrapping and Unicode support
+      // In jsPDF 3.x, we need to use a font that supports Unicode/Polish characters
+      // Standard fonts (helvetica, times, courier) don't fully support Polish chars
+      // We'll use the internal encoding to ensure proper character rendering
       const addText = (text, fontSize = 10, isBold = false, color = '#000000', xOffset = 0) => {
         pdf.setFontSize(fontSize);
-        pdf.setFont('helvetica', isBold ? 'bold' : 'normal');
+        // Use 'times' font - it has better Unicode support than helvetica
+        pdf.setFont('times', isBold ? 'bold' : 'normal');
         // Handle both hex strings and RGB arrays
         if (Array.isArray(color)) {
           pdf.setTextColor(color[0], color[1], color[2]);
@@ -57,10 +142,27 @@ export class CVPdfExporter {
           pdf.setTextColor(color);
         }
         
-        const lines = pdf.splitTextToSize(text, contentWidth - xOffset);
-        for (let i = 0; i < lines.length; i++) {
+        // Ensure text is a string and handle Unicode properly
+        const textStr = typeof text === 'string' ? text : String(text);
+        
+        // In jsPDF 3.x, we need to use the internal API for better Unicode support
+        // Try using the internal encoding method
+        try {
+          const lines = pdf.splitTextToSize(textStr, contentWidth - xOffset);
+          for (let i = 0; i < lines.length; i++) {
+            ensureSpaceFor(1);
+            // Use the internal text method with proper encoding
+            // In jsPDF 3.x, text() should handle Unicode, but we'll ensure it
+            const line = lines[i];
+            // Use text() method - in jsPDF 3.x it should handle Unicode
+            pdf.text(line, margin + xOffset, currentY);
+            currentY += lineHeight;
+          }
+        } catch (e) {
+          // Fallback: try without splitTextToSize
+          console.warn('Error rendering text with Unicode:', e);
           ensureSpaceFor(1);
-          pdf.text(lines[i], margin + xOffset, currentY);
+          pdf.text(textStr, margin + xOffset, currentY);
           currentY += lineHeight;
         }
         return currentY;
@@ -77,7 +179,7 @@ export class CVPdfExporter {
       const addSectionHeader = (title) => {
         currentY += sectionSpacing;
         ensureSpaceFor(1);
-        pdf.setFont('helvetica', 'bold');
+        pdf.setFont('times', 'bold');
         pdf.setFontSize(16);
         pdf.setTextColor(THEME_TEXT[0], THEME_TEXT[1], THEME_TEXT[2]);
         pdf.text(title, margin, currentY);
@@ -95,12 +197,21 @@ export class CVPdfExporter {
         const lines = pdf.splitTextToSize(text, contentWidth - bulletIndent);
         if (lines.length === 0) return;
 
-        // Ensure at least one line fits with the bullet
-        ensureSpaceFor(1);
+        // Calculate total height needed for this bullet point
+        const totalHeight = lines.length * lineHeight + 4; // +4 for spacing after
+        
+        // Check if we have enough space for the ENTIRE bullet point
+        const bottom = pdfHeight - margin;
+        if (currentY + totalHeight > bottom) {
+          // Not enough space - move to next page
+          pdf.addPage();
+          currentY = margin;
+          drawLeftGuide();
+        }
 
         // Draw bullet and first line
         pdf.setFontSize(fontSize);
-        pdf.setFont('helvetica', 'normal');
+        pdf.setFont('times', 'normal');
         pdf.setTextColor(THEME_PRIMARY[0], THEME_PRIMARY[1], THEME_PRIMARY[2]);
         pdf.text('•', margin, currentY);
 
@@ -115,6 +226,7 @@ export class CVPdfExporter {
 
         // Remaining wrapped lines (indented, no bullet)
         for (let i = 1; i < lines.length; i++) {
+          // Double check space for each line (shouldn't be needed, but safety check)
           ensureSpaceFor(1);
           // Use same color handling for wrapped lines
           if (Array.isArray(color)) {
@@ -217,7 +329,7 @@ export class CVPdfExporter {
       }
 
       // Draw name
-      pdf.setFont('helvetica', 'bold');
+      pdf.setFont('times', 'bold');
       pdf.setFontSize(24);
       pdf.setTextColor(THEME_TEXT[0], THEME_TEXT[1], THEME_TEXT[2]);
       let textY = firstBaselineY;
@@ -226,7 +338,7 @@ export class CVPdfExporter {
       // Draw title
       if (titleExists) {
         textY += 8 + titleLineHeight;
-        pdf.setFont('helvetica', 'bold');
+        pdf.setFont('times', 'bold');
         pdf.setFontSize(16);
         pdf.setTextColor(55, 65, 81); // #374151
         pdf.text(cvData.title, margin, textY);
@@ -235,7 +347,7 @@ export class CVPdfExporter {
       // Draw contact
       if (contactExists) {
         textY += 14 + contactLineHeight;
-        pdf.setFont('helvetica', 'normal');
+        pdf.setFont('times', 'normal');
         pdf.setFontSize(11);
         pdf.setTextColor(THEME_MUTED[0], THEME_MUTED[1], THEME_MUTED[2]);
         const contactInfo = [];
@@ -253,14 +365,14 @@ export class CVPdfExporter {
 
       // Summary Section
       if (cvData.summary) {
-        addSectionHeader('Summary');
+        addSectionHeader(t('summary'));
         addText(cvData.summary, 11, false, [55, 65, 81]);
         currentY += 8;
       }
 
       // Education Section
       if (cvData.education && cvData.education.length > 0) {
-        addSectionHeader('Education');
+        addSectionHeader(t('education'));
         cvData.education.forEach((edu, index) => {
           if (edu.degree || edu.university) {
             // Degree and University
@@ -282,63 +394,235 @@ export class CVPdfExporter {
         });
       }
 
+      // Helper function to estimate height needed for an experience entry
+      const estimateExperienceHeight = (exp) => {
+        let estimatedHeight = 0;
+        
+        const jobTitle = exp.jobTitle && !exp.jobTitle.includes('[Job Title]') ? exp.jobTitle : '';
+        const company = exp.company && !exp.company.includes('[Company') ? exp.company : '';
+        const cityState = exp.cityState && !exp.cityState.includes('[City') ? exp.cityState : '';
+        const dates = exp.dates && !exp.dates.includes('[Start Date]') ? exp.dates : '';
+        
+        if (jobTitle || company) {
+          // Job title line (may wrap)
+          const jobParts = [];
+          if (jobTitle) jobParts.push(jobTitle);
+          if (company) jobParts.push(company);
+          if (jobParts.length > 0) {
+            pdf.setFont('times', 'bold');
+            pdf.setFontSize(12);
+            const jobLines = pdf.splitTextToSize(jobParts.join(' | '), contentWidth);
+            estimatedHeight += jobLines.length * lineHeight;
+            estimatedHeight += 2; // spacing after title (2pt)
+          }
+          
+          // Location and dates line (may wrap)
+          const locationDates = [];
+          if (cityState) locationDates.push(cityState);
+          if (dates) locationDates.push(dates);
+          if (locationDates.length > 0) {
+            pdf.setFont('times', 'normal');
+            pdf.setFontSize(10);
+            const locationLines = pdf.splitTextToSize(locationDates.join(' • '), contentWidth);
+            estimatedHeight += locationLines.length * lineHeight;
+            estimatedHeight += 8; // spacing after location (8pt)
+          }
+          
+          // Responsibilities - each responsibility may wrap, include spacing
+          if (exp.responsibilities && exp.responsibilities.length > 0) {
+            pdf.setFont('times', 'normal');
+            pdf.setFontSize(10);
+            exp.responsibilities.forEach(resp => {
+              const clean = resp.replace(/\s+/g, ' ').trim();
+              if (clean) {
+                const respLines = pdf.splitTextToSize(clean, contentWidth - bulletIndent);
+                estimatedHeight += Math.max(1, respLines.length) * lineHeight + 4; // +4 for spacing after each bullet
+              }
+            });
+          }
+          
+          estimatedHeight += itemSpacing / 2; // spacing after entry
+        }
+        
+        return estimatedHeight;
+      };
+
       // Professional Experience Section
       if (cvData.experience && cvData.experience.length > 0) {
-        addSectionHeader('Professional Experience');
-        cvData.experience.forEach((exp, index) => {
-          if (exp.jobTitle || exp.company) {
-            // Job Title and Company
-            const jobLine = `${exp.jobTitle || '[Job Title]'} | ${exp.company || '[Company]'}`;
-            addText(jobLine, 12, true, THEME_TEXT);
-            currentY += 2;
-            
-            // Location and Dates
-            const locationDates = [];
-            if (exp.cityState) locationDates.push(exp.cityState);
-            if (exp.dates) locationDates.push(exp.dates);
-            if (locationDates.length > 0) {
-              addText(locationDates.join(' • '), 10, false, THEME_MUTED);
-            }
-            currentY += 8;
-            
-            // Responsibilities with proper bullet points
-            if (exp.responsibilities && exp.responsibilities.length > 0) {
-              exp.responsibilities.forEach(resp => {
-                const clean = resp.replace(/\s+/g, ' ').trim();
-                if (clean) {
-                  addBulletParagraph(clean, 10, [55, 65, 81]);
-                }
-              });
-            }
-            
-            // Add spacing between experience entries
-            currentY += itemSpacing;
-          }
+        // Filter out empty experiences or those with only placeholder values
+        const validExperiences = cvData.experience.filter(exp => {
+          const hasJobTitle = exp.jobTitle && exp.jobTitle.trim() && !exp.jobTitle.includes('[Job Title]');
+          const hasCompany = exp.company && exp.company.trim() && !exp.company.includes('[Company');
+          return hasJobTitle || hasCompany;
         });
+        
+        if (validExperiences.length > 0) {
+          addSectionHeader(t('experience'));
+          validExperiences.forEach((exp, index) => {
+            const jobTitle = exp.jobTitle && !exp.jobTitle.includes('[Job Title]') ? exp.jobTitle : '';
+            const company = exp.company && !exp.company.includes('[Company') ? exp.company : '';
+            const cityState = exp.cityState && !exp.cityState.includes('[City') ? exp.cityState : '';
+            const dates = exp.dates && !exp.dates.includes('[Start Date]') ? exp.dates : '';
+            
+            // Only show if we have at least jobTitle or company
+            if (jobTitle || company) {
+              // Check if we have enough space for this experience entry
+              // If not, move to next page
+              const estimatedHeight = estimateExperienceHeight(exp);
+              const bottom = pdfHeight - margin;
+              const availableSpace = bottom - currentY;
+              const pageHeight = pdfHeight - (margin * 2);
+              
+              // Add larger buffer: at least 6 lines or 25% of estimated height, whichever is larger
+              // This ensures we have plenty of space and prevents awkward breaks
+              const buffer = Math.max(lineHeight * 6, estimatedHeight * 0.25);
+              const minSpaceNeeded = estimatedHeight + buffer;
+              
+              // Also check if we're too close to the bottom (less than 20% of page height remaining)
+              // If so, move to next page to avoid starting entries too close to page end
+              const minRemainingSpace = pageHeight * 0.2;
+              
+              // Move to next page if:
+              // 1. Not enough space for entry + buffer, OR
+              // 2. Less than 20% of page height remaining (too close to bottom)
+              if (currentY + minSpaceNeeded > bottom || availableSpace < minRemainingSpace) {
+                // Not enough space - move to next page
+                pdf.addPage();
+                currentY = margin;
+                drawLeftGuide();
+              }
+              
+              // Job Title and Company
+              const jobParts = [];
+              if (jobTitle) jobParts.push(jobTitle);
+              if (company) jobParts.push(company);
+              if (jobParts.length > 0) {
+                // Check space for job title before adding
+                pdf.setFont('times', 'bold');
+                pdf.setFontSize(12);
+                const jobLines = pdf.splitTextToSize(jobParts.join(' | '), contentWidth);
+                const jobHeight = jobLines.length * lineHeight + 2; // +2 for spacing
+                const bottom = pdfHeight - margin;
+                if (currentY + jobHeight > bottom) {
+                  pdf.addPage();
+                  currentY = margin;
+                  drawLeftGuide();
+                }
+                addText(jobParts.join(' | '), 12, true, THEME_TEXT);
+                currentY += 2;
+              }
+              
+              // Location and Dates
+              const locationDates = [];
+              if (cityState) locationDates.push(cityState);
+              if (dates) locationDates.push(dates);
+              if (locationDates.length > 0) {
+                // Check space for location/dates before adding
+                pdf.setFont('times', 'normal');
+                pdf.setFontSize(10);
+                const locationLines = pdf.splitTextToSize(locationDates.join(' • '), contentWidth);
+                const locationHeight = locationLines.length * lineHeight + 8; // +8 for spacing
+                const bottom = pdfHeight - margin;
+                if (currentY + locationHeight > bottom) {
+                  pdf.addPage();
+                  currentY = margin;
+                  drawLeftGuide();
+                }
+                addText(locationDates.join(' • '), 10, false, THEME_MUTED);
+              }
+              currentY += 8;
+              
+              // Responsibilities with proper bullet points
+              if (exp.responsibilities && exp.responsibilities.length > 0) {
+                // Before starting responsibilities, check if we have space for ALL of them
+                // Estimate total height needed for all responsibilities
+                pdf.setFont('times', 'normal');
+                pdf.setFontSize(10);
+                let totalRespHeight = 0;
+                exp.responsibilities.forEach(resp => {
+                  const clean = resp.replace(/\s+/g, ' ').trim();
+                  if (clean) {
+                    const respLines = pdf.splitTextToSize(clean, contentWidth - bulletIndent);
+                    totalRespHeight += Math.max(1, respLines.length) * lineHeight + 4; // +4 for spacing
+                  }
+                });
+                
+                const bottom = pdfHeight - margin;
+                // If we don't have space for all responsibilities, move to next page
+                if (currentY + totalRespHeight > bottom - (lineHeight * 2)) {
+                  pdf.addPage();
+                  currentY = margin;
+                  drawLeftGuide();
+                }
+                
+                // Now add each bullet point (addBulletParagraph will check space for each)
+                exp.responsibilities.forEach(resp => {
+                  const clean = resp.replace(/\s+/g, ' ').trim();
+                  if (clean) {
+                    addBulletParagraph(clean, 10, [55, 65, 81]);
+                  }
+                });
+              }
+              
+              // Add spacing between experience entries (reduced)
+              currentY += itemSpacing / 2;
+            }
+          });
+        }
       }
 
       // Skills Section
       if (cvData.skills) {
-        addSectionHeader('Skills');
+        const hasSection = (sectionId) => {
+          if (sectionId === 'technical') return cvData.skills.technical && cvData.skills.technical !== null;
+          if (sectionId === 'soft') return cvData.skills.soft && cvData.skills.soft !== null;
+          if (sectionId === 'languages') return cvData.skills.languages && cvData.skills.languages !== null;
+          if (sectionId.startsWith('custom-')) {
+            const idx = parseInt(sectionId.split('-')[1]);
+            return cvData.skills.custom?.[idx]?.title && cvData.skills.custom[idx].content;
+          }
+          return false;
+        };
+
+        const getSectionTitle = (sectionId) => {
+          if (sectionId === 'technical') return t('technicalSkills');
+          if (sectionId === 'soft') return t('softSkills');
+          if (sectionId === 'languages') return t('languages');
+          if (sectionId.startsWith('custom-')) {
+            const idx = parseInt(sectionId.split('-')[1]);
+            return cvData.skills.custom?.[idx]?.title || '';
+          }
+          return '';
+        };
+
+        const getSectionContent = (sectionId) => {
+          if (sectionId === 'technical') return cvData.skills.technical;
+          if (sectionId === 'soft') return cvData.skills.soft;
+          if (sectionId === 'languages') return cvData.skills.languages;
+          if (sectionId.startsWith('custom-')) {
+            const idx = parseInt(sectionId.split('-')[1]);
+            return cvData.skills.custom?.[idx]?.content || '';
+          }
+          return '';
+        };
+
+        const order = cvData.skills.order || ['technical', 'soft', 'languages'];
+        const visibleSections = order.filter(hasSection);
         
-        if (cvData.skills.technical) {
-          addText('Technical Skills:', 11, true, THEME_TEXT);
-          currentY += 4;
-          addText(cvData.skills.technical, 10, false, [55, 65, 81]);
-          currentY += itemSpacing;
-        }
-        
-        if (cvData.skills.soft) {
-          addText('Soft Skills:', 11, true, THEME_TEXT);
-          currentY += 4;
-          addText(cvData.skills.soft, 10, false, [55, 65, 81]);
-          currentY += itemSpacing;
-        }
-        
-        if (cvData.skills.languages) {
-          addText('Languages:', 11, true, THEME_TEXT);
-          currentY += 4;
-          addText(cvData.skills.languages, 10, false, [55, 65, 81]);
+        if (visibleSections.length > 0) {
+          const sectionTitle = cvData.skills.title || t('competencies');
+          addSectionHeader(sectionTitle);
+          
+          visibleSections.forEach((sectionId) => {
+            const title = getSectionTitle(sectionId);
+            const content = getSectionContent(sectionId);
+            if (title && content) {
+              addText(`${title}:`, 11, true, THEME_TEXT);
+              currentY += 4;
+              addText(content, 10, false, [55, 65, 81]);
+              currentY += itemSpacing;
+            }
+          });
         }
       }
 

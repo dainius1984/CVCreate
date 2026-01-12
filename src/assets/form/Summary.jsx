@@ -1,9 +1,12 @@
 import React from 'react';
+import { useLanguage } from '../../contexts/LanguageContext.jsx';
 
 const Summary = ({ summary, onChange }) => {
+  const { t } = useLanguage();
+  
   return (
     <div className="mb-6">
-      <h2 className="text-xl font-semibold text-gray-700 mb-3">Summary</h2>
+      <h2 className="text-xl font-semibold text-gray-700 mb-3">{t('summary')}</h2>
       <textarea
         name="summary"
         value={summary}

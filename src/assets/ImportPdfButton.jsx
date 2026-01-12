@@ -1,6 +1,9 @@
 import React, { useRef, useState } from 'react';
+import { useLanguage } from '../contexts/LanguageContext.jsx';
+import { translations } from '../utils/translations.js';
 
 const ImportPdfButton = ({ onImport }) => {
+  const { t, language } = useLanguage();
   const inputRef = useRef(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
@@ -129,14 +132,57 @@ const ImportPdfButton = ({ onImport }) => {
       }
     }
 
-    // Skills: simple key-value paragraphs
-    const skillsLines = sliceSection('skills');
-    const skillsText = skillsLines.join(' ');
-    const skills = {
-      technical: (skillsText.match(/technical skills:?\s*([^]+?)(?:soft skills:|languages:|$)/i) || [])[1]?.trim() || '',
-      soft: (skillsText.match(/soft skills:?\s*([^]+?)(?:languages:|$)/i) || [])[1]?.trim() || '',
-      languages: (skillsText.match(/languages:?\s*([^]+)$/i) || [])[1]?.trim() || '',
-    };
+    // Competencies: parse categories and items
+    const competenciesLines = sliceSection('skills');
+    const competenciesText = competenciesLines.join(' ');
+    const competencies = [];
+    
+    // Try to parse competencies from text (look for category: item patterns)
+    const categoryPattern = /([^:]+):\s*([^\n]+(?:\n(?!\w+:|$)[^\n]+)*)/g;
+    let match;
+    while ((match = categoryPattern.exec(competenciesText)) !== null) {
+      const category = match[1].trim();
+      const itemsText = match[2].trim();
+      // Split items by bullet points or new lines
+      const items = itemsText
+        .split(/[•\-\u2022\n]/)
+        .map(item => item.trim())
+        .filter(item => item.length > 0);
+      if (items.length > 0) {
+        competencies.push({ category, items });
+      }
+    }
+    
+    // Fallback: if no structured format found, try legacy skills format
+    if (competencies.length === 0) {
+      const technicalMatch = competenciesText.match(new RegExp('technical skills:?\\s*([\\s\\S]+?)(?:soft skills:|languages:|$)', 'i'));
+      const technical = technicalMatch ? (technicalMatch[1] || '').trim() : '';
+      
+      const softMatch = competenciesText.match(new RegExp('soft skills:?\\s*([\\s\\S]+?)(?:languages:|$)', 'i'));
+      const soft = softMatch ? (softMatch[1] || '').trim() : '';
+      
+      const languagesMatch = competenciesText.match(new RegExp('languages:?\\s*([\\s\\S]+)$', 'i'));
+      const languages = languagesMatch ? (languagesMatch[1] || '').trim() : '';
+      
+      if (technical) {
+        competencies.push({
+          category: translations[language]?.technicalSkills || 'Technical Skills',
+          items: technical.split(',').map(s => s.trim()).filter(Boolean)
+        });
+      }
+      if (soft) {
+        competencies.push({
+          category: translations[language]?.softSkills || 'Soft Skills',
+          items: soft.split(',').map(s => s.trim()).filter(Boolean)
+        });
+      }
+      if (languages) {
+        competencies.push({
+          category: translations[language]?.languages || 'Languages',
+          items: languages.split(',').map(s => s.trim()).filter(Boolean)
+        });
+      }
+    }
 
     return {
       name,
@@ -147,7 +193,7 @@ const ImportPdfButton = ({ onImport }) => {
       summary,
       experience: experiences,
       education,
-      skills,
+      competencies,
     };
   };
 
@@ -185,7 +231,7 @@ const ImportPdfButton = ({ onImport }) => {
         className="inline-flex items-center px-3 py-2 rounded-md text-sm font-medium bg-indigo-600 text-white hover:bg-indigo-700 focus:outline-none"
         disabled={loading}
       >
-        {loading ? 'Importing…' : 'Import from PDF'}
+        {loading ? (language === 'pl' ? 'Importowanie…' : 'Importing…') : t('importFromPdf')}
       </button>
       {error && (
         <p className="text-sm text-red-600 mt-2">{error}</p>
