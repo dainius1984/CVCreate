@@ -168,3 +168,78 @@ div.absolute.inset-0 {
   border-left: none !important;
   outline: none !important;
 }
+
+/* Ensure text wrapping and prevent overflow */
+#cv-preview {
+  word-wrap: break-word !important;
+  overflow-wrap: break-word !important;
+  max-width: 100% !important;
+}
+
+#cv-preview * {
+  word-wrap: break-word !important;
+  overflow-wrap: break-word !important;
+  max-width: 100% !important;
+  box-sizing: border-box !important;
+}
+
+/* Page break control for PDF export - prevent experience entries from breaking */
+#cv-preview [data-section="experience"] {
+  page-break-inside: avoid !important;
+  break-inside: avoid !important;
+  margin-bottom: 12px !important;
+  padding-top: 4px !important;
+}
+
+/* Prevent individual experience entries from breaking across pages */
+#cv-preview [data-section^="experience-"] {
+  page-break-inside: avoid !important;
+  break-inside: avoid !important;
+  margin-bottom: 10px !important;
+  padding-top: 4px !important;
+  padding-bottom: 4px !important;
+  width: 100% !important;
+  max-width: 100% !important;
+}
+
+/* Ensure text in experience entries wraps properly */
+#cv-preview [data-section^="experience-"] h3,
+#cv-preview [data-section^="experience-"] p,
+#cv-preview [data-section^="experience-"] li {
+  word-wrap: break-word !important;
+  overflow-wrap: break-word !important;
+  max-width: 100% !important;
+  white-space: normal !important;
+}
+
+/* Prevent bullet points from breaking */
+#cv-preview [data-section^="experience-"] ul {
+  page-break-inside: avoid !important;
+  break-inside: avoid !important;
+  width: 100% !important;
+  max-width: 100% !important;
+  overflow: hidden !important;
+}
+
+#cv-preview [data-section^="experience-"] li {
+  page-break-inside: avoid !important;
+  break-inside: avoid !important;
+  margin-bottom: 4px !important;
+  word-wrap: break-word !important;
+  overflow-wrap: break-word !important;
+  max-width: 100% !important;
+}
+
+/* Add spacing before experience section to prevent breaking at top of page */
+#cv-preview [data-section="experience"] {
+  margin-top: 8px !important;
+  padding-top: 8px !important;
+}
+
+/* Ensure sections don't break at page boundaries */
+#cv-preview section {
+  page-break-inside: avoid !important;
+  break-inside: avoid !important;
+  width: 100% !important;
+  max-width: 100% !important;
+}

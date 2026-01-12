@@ -15,11 +15,11 @@ export class CVPdfExporter {
         try {
           console.log('Capturing CV preview with html2canvas');
           
-          // Add exporting class to hide guides
+          // Add exporting class to hide guides and apply page break styles
           previewElement.classList.add('exporting');
           
           // Wait for styles to apply
-          await new Promise(resolve => setTimeout(resolve, 150));
+          await new Promise(resolve => setTimeout(resolve, 200));
           
           const canvas = await html2canvas(previewElement, {
             scale: 2,
@@ -27,6 +27,8 @@ export class CVPdfExporter {
             logging: false,
             backgroundColor: '#ffffff',
             allowTaint: false,
+            windowWidth: previewElement.scrollWidth,
+            windowHeight: previewElement.scrollHeight,
           });
           
           // Remove exporting class
@@ -91,16 +93,19 @@ export class CVPdfExporter {
       const pdfWidth = pdf.internal.pageSize.getWidth(); // 595.28 pts
       const pdfHeight = pdf.internal.pageSize.getHeight(); // 841.89 pts
       
-      // Margins in points (1 inch = 72 pts, so ~0.75 inch margins)
-      const margin = 54; // 54pts = 0.75 inches
-      const contentWidth = pdfWidth - (margin * 2);
+      // Margins in points (1 inch = 72 pts) - increased margins for better page breaks
+      const margin = 72; // 72pts = 1 inch (top and bottom)
+      const sideMargin = 54; // 54pts = 0.75 inches (left and right)
+      const contentWidth = pdfWidth - (sideMargin * 2);
       const contentHeight = pdfHeight - (margin * 2);
 
       let currentY = margin;
       const lineHeight = 14;
-      const sectionSpacing = 16;
-      const itemSpacing = 12;
+      const sectionSpacing = 8;
+      const itemSpacing = 6;
       const bulletIndent = 20;
+      const pageBreakMargin = 40; // Extra margin when starting new page (increased for better spacing)
+      const bottomMargin = 90; // Bottom margin for page breaks (larger than top margin)
 
       // Theme colors (match app preview) - converted to RGB for jsPDF
       const THEME_PRIMARY = [37, 99, 235]; // #2563eb blue-600
@@ -111,7 +116,7 @@ export class CVPdfExporter {
       const drawLeftGuide = () => {
         pdf.setDrawColor('#e5e7eb');
         pdf.setLineWidth(0.8);
-        pdf.line(margin, margin, margin, pdfHeight - margin);
+        pdf.line(sideMargin, margin, sideMargin, pdfHeight - margin);
       };
 
       // Draw guide on the first page
@@ -119,10 +124,10 @@ export class CVPdfExporter {
 
       // Internal: ensure there is enough space for next line, otherwise add a page
       const ensureSpaceFor = (linesNeeded = 1) => {
-        const bottom = pdfHeight - margin;
+        const bottom = pdfHeight - bottomMargin; // Use larger bottom margin
         if (currentY + (lineHeight * linesNeeded) > bottom) {
           pdf.addPage();
-          currentY = margin;
+          currentY = margin + pageBreakMargin; // Add extra margin at top of new page
           drawLeftGuide();
         }
       };
@@ -155,14 +160,14 @@ export class CVPdfExporter {
             // In jsPDF 3.x, text() should handle Unicode, but we'll ensure it
             const line = lines[i];
             // Use text() method - in jsPDF 3.x it should handle Unicode
-            pdf.text(line, margin + xOffset, currentY);
+            pdf.text(line, sideMargin + xOffset, currentY);
             currentY += lineHeight;
           }
         } catch (e) {
           // Fallback: try without splitTextToSize
           console.warn('Error rendering text with Unicode:', e);
           ensureSpaceFor(1);
-          pdf.text(textStr, margin + xOffset, currentY);
+          pdf.text(textStr, sideMargin + xOffset, currentY);
           currentY += lineHeight;
         }
         return currentY;
@@ -172,7 +177,7 @@ export class CVPdfExporter {
       const addHorizontalLine = (y, width = contentWidth, color = '#e5e7eb') => {
         pdf.setDrawColor(color);
         pdf.setLineWidth(0.5);
-        pdf.line(margin, y, margin + width, y);
+        pdf.line(sideMargin, y, sideMargin + width, y);
       };
 
       // Helper: Section header with nice underline and space before body
@@ -182,63 +187,37 @@ export class CVPdfExporter {
         pdf.setFont('times', 'bold');
         pdf.setFontSize(16);
         pdf.setTextColor(THEME_TEXT[0], THEME_TEXT[1], THEME_TEXT[2]);
-        pdf.text(title, margin, currentY);
-        currentY += 6;
+        pdf.text(title, sideMargin, currentY);
+        currentY += 4;
         // Short accent underline
         pdf.setDrawColor(THEME_PRIMARY[0], THEME_PRIMARY[1], THEME_PRIMARY[2]);
         pdf.setLineWidth(1.5);
         const uw = Math.min(180, contentWidth * 0.35);
-        pdf.line(margin, currentY, margin + uw, currentY);
-        currentY += 12; // gap after underline before content
+        pdf.line(sideMargin, currentY, sideMargin + uw, currentY);
+        currentY += 6; // gap after underline before content
       };
 
-      // Helper function to add bullet paragraph that never splits bullet from first line
+      // Helper function to add responsibility paragraph without bullets
       const addBulletParagraph = (text, fontSize = 10, color = '#374151') => {
-        const lines = pdf.splitTextToSize(text, contentWidth - bulletIndent);
+        // Use full content width (no bullet indent)
+        const lines = pdf.splitTextToSize(text, contentWidth);
         if (lines.length === 0) return;
 
-        // Calculate total height needed for this bullet point
-        const totalHeight = lines.length * lineHeight + 4; // +4 for spacing after
+        // Calculate total height needed
+        const totalHeight = lines.length * lineHeight + 2; // +2 for spacing after
         
-        // Check if we have enough space for the ENTIRE bullet point
-        const bottom = pdfHeight - margin;
+        // Check if we have enough space for the ENTIRE paragraph
+        const bottom = pdfHeight - bottomMargin; // Use larger bottom margin
         if (currentY + totalHeight > bottom) {
           // Not enough space - move to next page
           pdf.addPage();
-          currentY = margin;
+          currentY = margin + pageBreakMargin; // Add extra margin at top of new page
           drawLeftGuide();
         }
 
-        // Draw bullet and first line
-        pdf.setFontSize(fontSize);
-        pdf.setFont('times', 'normal');
-        pdf.setTextColor(THEME_PRIMARY[0], THEME_PRIMARY[1], THEME_PRIMARY[2]);
-        pdf.text('•', margin, currentY);
-
-        // Handle both hex strings and RGB arrays for text color
-        if (Array.isArray(color)) {
-          pdf.setTextColor(color[0], color[1], color[2]);
-        } else {
-          pdf.setTextColor(color);
-        }
-        pdf.text(lines[0], margin + bulletIndent, currentY);
-        currentY += lineHeight;
-
-        // Remaining wrapped lines (indented, no bullet)
-        for (let i = 1; i < lines.length; i++) {
-          // Double check space for each line (shouldn't be needed, but safety check)
-          ensureSpaceFor(1);
-          // Use same color handling for wrapped lines
-          if (Array.isArray(color)) {
-            pdf.setTextColor(color[0], color[1], color[2]);
-          } else {
-            pdf.setTextColor(color);
-          }
-          pdf.text(lines[i], margin + bulletIndent, currentY);
-          currentY += lineHeight;
-        }
-
-        currentY += 4; // Extra spacing after bullet blocks
+        // Add text without bullet point
+        addText(text, fontSize, false, color);
+        currentY += 2; // Extra spacing after paragraph
       };
 
       // Helper to draw a profile photo if provided (top-right)
@@ -291,7 +270,7 @@ export class CVPdfExporter {
           };
 
           const size = 104; // slightly larger photo
-          const x = pdfWidth - margin - size;
+          const x = pdfWidth - sideMargin - size;
           const y = margin;
 
           const circularUrl = await toCircularDataUrl(dataUrl, size);
@@ -333,7 +312,7 @@ export class CVPdfExporter {
       pdf.setFontSize(24);
       pdf.setTextColor(THEME_TEXT[0], THEME_TEXT[1], THEME_TEXT[2]);
       let textY = firstBaselineY;
-      pdf.text(cvData.name || 'Your Name', margin, textY);
+      pdf.text(cvData.name || 'Your Name', sideMargin, textY);
 
       // Draw title
       if (titleExists) {
@@ -341,7 +320,7 @@ export class CVPdfExporter {
         pdf.setFont('times', 'bold');
         pdf.setFontSize(16);
         pdf.setTextColor(55, 65, 81); // #374151
-        pdf.text(cvData.title, margin, textY);
+        pdf.text(cvData.title, sideMargin, textY);
       }
 
       // Draw contact
@@ -353,7 +332,7 @@ export class CVPdfExporter {
         const contactInfo = [];
         if (cvData.phone) contactInfo.push(`Phone: ${cvData.phone}`);
         if (cvData.email) contactInfo.push(`Email: ${cvData.email}`);
-        pdf.text(contactInfo.join('  |  '), margin, textY);
+        pdf.text(contactInfo.join('  |  '), sideMargin, textY);
       }
 
       const headerBottom = Math.max(textY, headerStartY + photoSize);
@@ -413,7 +392,7 @@ export class CVPdfExporter {
             pdf.setFontSize(12);
             const jobLines = pdf.splitTextToSize(jobParts.join(' | '), contentWidth);
             estimatedHeight += jobLines.length * lineHeight;
-            estimatedHeight += 2; // spacing after title (2pt)
+            estimatedHeight += 1; // spacing after title (1pt)
           }
           
           // Location and dates line (may wrap)
@@ -425,7 +404,7 @@ export class CVPdfExporter {
             pdf.setFontSize(10);
             const locationLines = pdf.splitTextToSize(locationDates.join(' • '), contentWidth);
             estimatedHeight += locationLines.length * lineHeight;
-            estimatedHeight += 8; // spacing after location (8pt)
+            estimatedHeight += 4; // spacing after location (4pt)
           }
           
           // Responsibilities - each responsibility may wrap, include spacing
@@ -435,13 +414,13 @@ export class CVPdfExporter {
             exp.responsibilities.forEach(resp => {
               const clean = resp.replace(/\s+/g, ' ').trim();
               if (clean) {
-                const respLines = pdf.splitTextToSize(clean, contentWidth - bulletIndent);
-                estimatedHeight += Math.max(1, respLines.length) * lineHeight + 4; // +4 for spacing after each bullet
+                const respLines = pdf.splitTextToSize(clean, contentWidth);
+                estimatedHeight += Math.max(1, respLines.length) * lineHeight + 2; // +2 for spacing after each
               }
             });
           }
           
-          estimatedHeight += itemSpacing / 2; // spacing after entry
+          estimatedHeight += itemSpacing; // spacing after entry
         }
         
         return estimatedHeight;
@@ -469,26 +448,26 @@ export class CVPdfExporter {
               // Check if we have enough space for this experience entry
               // If not, move to next page
               const estimatedHeight = estimateExperienceHeight(exp);
-              const bottom = pdfHeight - margin;
+              const bottom = pdfHeight - bottomMargin; // Use larger bottom margin
               const availableSpace = bottom - currentY;
-              const pageHeight = pdfHeight - (margin * 2);
+              const pageHeight = pdfHeight - (margin + pageBreakMargin) - bottomMargin;
               
               // Add larger buffer: at least 6 lines or 25% of estimated height, whichever is larger
               // This ensures we have plenty of space and prevents awkward breaks
               const buffer = Math.max(lineHeight * 6, estimatedHeight * 0.25);
               const minSpaceNeeded = estimatedHeight + buffer;
               
-              // Also check if we're too close to the bottom (less than 20% of page height remaining)
+              // Also check if we're too close to the bottom (less than 25% of page height remaining)
               // If so, move to next page to avoid starting entries too close to page end
-              const minRemainingSpace = pageHeight * 0.2;
+              const minRemainingSpace = pageHeight * 0.25;
               
               // Move to next page if:
               // 1. Not enough space for entry + buffer, OR
-              // 2. Less than 20% of page height remaining (too close to bottom)
+              // 2. Less than 25% of page height remaining (too close to bottom)
               if (currentY + minSpaceNeeded > bottom || availableSpace < minRemainingSpace) {
                 // Not enough space - move to next page
                 pdf.addPage();
-                currentY = margin;
+                currentY = margin + pageBreakMargin; // Add extra margin at top of new page
                 drawLeftGuide();
               }
               
@@ -501,15 +480,15 @@ export class CVPdfExporter {
                 pdf.setFont('times', 'bold');
                 pdf.setFontSize(12);
                 const jobLines = pdf.splitTextToSize(jobParts.join(' | '), contentWidth);
-                const jobHeight = jobLines.length * lineHeight + 2; // +2 for spacing
-                const bottom = pdfHeight - margin;
+                const jobHeight = jobLines.length * lineHeight + 1; // +1 for spacing
+                const bottom = pdfHeight - bottomMargin; // Use larger bottom margin
                 if (currentY + jobHeight > bottom) {
                   pdf.addPage();
-                  currentY = margin;
+                  currentY = margin + pageBreakMargin; // Add extra margin at top
                   drawLeftGuide();
                 }
                 addText(jobParts.join(' | '), 12, true, THEME_TEXT);
-                currentY += 2;
+                currentY += 1;
               }
               
               // Location and Dates
@@ -521,16 +500,16 @@ export class CVPdfExporter {
                 pdf.setFont('times', 'normal');
                 pdf.setFontSize(10);
                 const locationLines = pdf.splitTextToSize(locationDates.join(' • '), contentWidth);
-                const locationHeight = locationLines.length * lineHeight + 8; // +8 for spacing
-                const bottom = pdfHeight - margin;
+                const locationHeight = locationLines.length * lineHeight + 4; // +4 for spacing
+                const bottom = pdfHeight - bottomMargin; // Use larger bottom margin
                 if (currentY + locationHeight > bottom) {
                   pdf.addPage();
-                  currentY = margin;
+                  currentY = margin + pageBreakMargin; // Add extra margin at top
                   drawLeftGuide();
                 }
                 addText(locationDates.join(' • '), 10, false, THEME_MUTED);
               }
-              currentY += 8;
+              currentY += 4;
               
               // Responsibilities with proper bullet points
               if (exp.responsibilities && exp.responsibilities.length > 0) {
@@ -542,16 +521,16 @@ export class CVPdfExporter {
                 exp.responsibilities.forEach(resp => {
                   const clean = resp.replace(/\s+/g, ' ').trim();
                   if (clean) {
-                    const respLines = pdf.splitTextToSize(clean, contentWidth - bulletIndent);
-                    totalRespHeight += Math.max(1, respLines.length) * lineHeight + 4; // +4 for spacing
+                    const respLines = pdf.splitTextToSize(clean, contentWidth);
+                    totalRespHeight += Math.max(1, respLines.length) * lineHeight + 2; // +2 for spacing
                   }
                 });
                 
-                const bottom = pdfHeight - margin;
+                const bottom = pdfHeight - bottomMargin; // Use larger bottom margin
                 // If we don't have space for all responsibilities, move to next page
                 if (currentY + totalRespHeight > bottom - (lineHeight * 2)) {
                   pdf.addPage();
-                  currentY = margin;
+                  currentY = margin + pageBreakMargin; // Add extra margin at top
                   drawLeftGuide();
                 }
                 
@@ -565,7 +544,9 @@ export class CVPdfExporter {
               }
               
               // Add spacing between experience entries (reduced)
-              currentY += itemSpacing / 2;
+              if (index < validExperiences.length - 1) {
+                currentY += itemSpacing;
+              }
             }
           });
         }

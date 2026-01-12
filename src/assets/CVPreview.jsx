@@ -116,9 +116,9 @@ const CVPreview = ({ cvData, cvRef }) => {
           {/* Header */}
           <header
             data-section="header"
-            className="flex flex-col md:flex-row items-center md:items-start justify-between mb-8"
+            className="flex flex-col md:flex-row items-center md:items-start justify-between mb-4"
             style={{ 
-              paddingBottom: '24px',
+              paddingBottom: '12px',
               borderBottom: '2px solid #e5e7eb'
             }}
           >
@@ -154,13 +154,13 @@ const CVPreview = ({ cvData, cvRef }) => {
           {cvData.summary && (
             <section 
               data-section="summary"
-              className="mb-8"
+              className="mb-4"
               style={{ 
-                paddingBottom: '20px'
+                paddingBottom: '8px'
               }}
             >
               <h2 className="text-xl font-bold text-gray-800 mb-1">{t('summary')}</h2>
-              <div style={{ width: '180px', height: '2px', backgroundColor: '#2563eb', marginBottom: '12px' }} />
+              <div style={{ width: '180px', height: '2px', backgroundColor: '#2563eb', marginBottom: '8px' }} />
               <p className="text-gray-700 leading-relaxed text-sm">{cvData.summary}</p>
             </section>
           )}
@@ -169,16 +169,16 @@ const CVPreview = ({ cvData, cvRef }) => {
           {cvData.education && cvData.education.length > 0 && (
             <section 
               data-section="education"
-              className="mb-8"
+              className="mb-4"
               style={{ 
-                paddingBottom: '20px',
+                paddingBottom: '8px',
                 borderBottom: '1px solid #e5e7eb'
               }}
             >
               <h2 className="text-xl font-bold text-gray-800 mb-1">{t('education')}</h2>
-              <div style={{ width: '180px', height: '2px', backgroundColor: '#2563eb', marginBottom: '12px' }} />
+              <div style={{ width: '180px', height: '2px', backgroundColor: '#2563eb', marginBottom: '8px' }} />
               {cvData.education.map((ed, i) => (
-                <div key={i} className="mb-3 last:mb-0" data-section={`education-item-${i}`}>
+                <div key={i} className="mb-2 last:mb-0" data-section={`education-item-${i}`}>
                   <h3 className="text-lg font-semibold text-gray-800">
                     {ed.degree || '[Degree Name]'} | {ed.university || '[University Name]'}, {ed.cityState || '[City, State]'}
                   </h3>
@@ -202,9 +202,9 @@ const CVPreview = ({ cvData, cvRef }) => {
             if (validExperiences.length === 0) return null;
             
             return (
-              <section data-section="experience" className="mb-6">
+              <section data-section="experience" className="mb-4">
                 <h2 className="text-xl font-bold text-gray-800 mb-1">{t('experience')}</h2>
-                <div style={{ width: '220px', height: '2px', backgroundColor: '#2563eb', marginBottom: '12px' }} />
+                <div style={{ width: '220px', height: '2px', backgroundColor: '#2563eb', marginBottom: '8px' }} />
                 
                 {validExperiences.map((exp, expIndex) => {
                   const jobTitle = exp.jobTitle && !exp.jobTitle.includes('[Job Title]') ? exp.jobTitle : '';
@@ -221,27 +221,65 @@ const CVPreview = ({ cvData, cvRef }) => {
                     <div 
                       key={expIndex} 
                       data-section={`experience-${expIndex}`}
-                      className="mb-3 last:mb-4"
+                      className="mb-2 last:mb-0"
+                      style={{
+                        pageBreakInside: 'avoid',
+                        breakInside: 'avoid',
+                        marginBottom: '10px',
+                        paddingTop: '4px',
+                        paddingBottom: '4px',
+                        width: '100%',
+                        maxWidth: '100%',
+                        wordWrap: 'break-word',
+                        overflowWrap: 'break-word',
+                        boxSizing: 'border-box'
+                      }}
                     >
                       {titleParts.length > 0 && (
-                        <h3 className="text-lg font-semibold text-gray-800 mb-1">
+                        <h3 
+                          className="text-lg font-semibold text-gray-800 mb-1"
+                          style={{
+                            wordWrap: 'break-word',
+                            overflowWrap: 'break-word',
+                            maxWidth: '100%',
+                            boxSizing: 'border-box'
+                          }}
+                        >
                           {titleParts.join(' | ')}
                         </h3>
                       )}
                       {dates && (
-                        <p className="text-gray-500 text-sm italic mb-2">
+                        <p 
+                          className="text-gray-500 text-sm italic mb-2"
+                          style={{
+                            wordWrap: 'break-word',
+                            overflowWrap: 'break-word',
+                            maxWidth: '100%',
+                            boxSizing: 'border-box'
+                          }}
+                        >
                           {dates}
                         </p>
                       )}
                   
                   {exp.responsibilities && exp.responsibilities.length > 0 && (
-                    <ul className="list-disc list-inside space-y-1 text-gray-700 text-sm" style={{ '--tw-prose-bullets': '#2563eb' }}>
+                    <div className="space-y-1 text-gray-700 text-sm">
                       {exp.responsibilities.map((resp, respIndex) => (
-                        <li key={respIndex} className="leading-relaxed" data-break>
+                        <div 
+                          key={respIndex} 
+                          className="leading-relaxed" 
+                          data-break
+                          style={{
+                            wordWrap: 'break-word',
+                            overflowWrap: 'break-word',
+                            maxWidth: '100%',
+                            boxSizing: 'border-box'
+                          }}
+                        >
                           {resp}
-                        </li>
+                        </div>
                       ))}
-                    </ul>
+                    </div>
                   )}
                   
                       {expIndex < validExperiences.length - 1 && (
