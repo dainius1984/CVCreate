@@ -44,7 +44,7 @@ export class CVPdfExporter {
             });
 
             // Desired inner margins between page edge and content (top & bottom)
-            const verticalMargin = 20; // ~20px in PDF units (points)
+            const verticalMargin = 40; // ~40px top & bottom between pages
             const pageWidthPt = pdf.internal.pageSize.getWidth();
             const pageHeightPt = pdf.internal.pageSize.getHeight();
 
@@ -56,13 +56,27 @@ export class CVPdfExporter {
             const contentHeightPt = pageHeightPt - verticalMargin * 2;
             const contentHeightPx = contentHeightPt / pxToPtScale;
 
+            // Approximate line-height in source pixels (for smoother page cuts).
+            // This helps avoid cutting text exactly in the middle of a line.
+            const approxLineHeightPx = 24;
+
             let sourceY = 0;
             let pageIndex = 0;
 
             // Slice the tall canvas into per-page chunks so we can
             // leave real blank space (margins) at the top and bottom
             while (sourceY < canvas.height) {
-              const sliceHeightPx = Math.min(contentHeightPx, canvas.height - sourceY);
+              let sliceHeightPx = Math.min(contentHeightPx, canvas.height - sourceY);
+
+              // Snap slice height down to a multiple of approxLineHeightPx
+              // (except for the last page), so lines are more evenly distributed
+              // and less likely to be visually cut between pages.
+              if (sourceY + sliceHeightPx < canvas.height) {
+                const multiples = Math.floor(sliceHeightPx / approxLineHeightPx);
+                if (multiples > 0) {
+                  sliceHeightPx = multiples * approxLineHeightPx;
+                }
+              }
 
               // Create a temporary canvas for this page slice
               const pageCanvas = document.createElement('canvas');
@@ -455,10 +469,14 @@ export class CVPdfExporter {
             pdf.setFont('times', 'normal');
             pdf.setFontSize(10);
             exp.responsibilities.forEach(resp => {
-              const clean = resp.replace(/\s+/g, ' ').trim();
+              const original = typeof resp === 'string' ? resp : String(resp || '');
+              const clean = original.replace(/\s+/g, ' ').trim();
               if (clean) {
                 const respLines = pdf.splitTextToSize(clean, contentWidth);
                 estimatedHeight += Math.max(1, respLines.length) * lineHeight + 2; // +2 for spacing after each
+              } else if (original !== '') {
+                // Empty line from textarea -> visual blank line
+                estimatedHeight += lineHeight;
               }
             });
           }
@@ -562,10 +580,14 @@ export class CVPdfExporter {
                 pdf.setFontSize(10);
                 let totalRespHeight = 0;
                 exp.responsibilities.forEach(resp => {
-                  const clean = resp.replace(/\s+/g, ' ').trim();
+                  const original = typeof resp === 'string' ? resp : String(resp || '');
+                  const clean = original.replace(/\s+/g, ' ').trim();
                   if (clean) {
                     const respLines = pdf.splitTextToSize(clean, contentWidth);
                     totalRespHeight += Math.max(1, respLines.length) * lineHeight + 2; // +2 for spacing
+                  } else if (original !== '') {
+                    // Blank responsibility line => reserve one line of space
+                    totalRespHeight += lineHeight;
                   }
                 });
                 
@@ -577,11 +599,21 @@ export class CVPdfExporter {
                   drawLeftGuide();
                 }
                 
-                // Now add each bullet point (addBulletParagraph will check space for each)
+                // Now add each bullet point or blank line (addBulletParagraph will check space for each)
                 exp.responsibilities.forEach(resp => {
-                  const clean = resp.replace(/\s+/g, ' ').trim();
+                  const original = typeof resp === 'string' ? resp : String(resp || '');
+                  const clean = original.replace(/\s+/g, ' ').trim();
                   if (clean) {
                     addBulletParagraph(clean, 10, [55, 65, 81]);
+                  } else if (original !== '') {
+                    // Represent an intentionally empty line from textarea
+                    const bottom = pdfHeight - bottomMargin;
+                    if (currentY + lineHeight > bottom) {
+                      pdf.addPage();
+                      currentY = margin + pageBreakMargin;
+                      drawLeftGuide();
+                    }
+                    currentY += lineHeight;
                   }
                 });
               }
