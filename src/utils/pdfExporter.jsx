@@ -487,6 +487,20 @@ export class CVPdfExporter {
         return estimatedHeight;
       };
 
+      // Helper to normalize "Present"/"obecnie" label according to export language
+      const normalizeDatesForLanguage = (datesStr) => {
+        if (!datesStr) return datesStr;
+        let out = String(datesStr);
+        if (language === 'pl') {
+          // For Polish export, always show "obecnie"
+          out = out.replace(/present/gi, 'obecnie');
+        } else {
+          // For non-Polish export, always show "Present"
+          out = out.replace(/obecnie/gi, 'Present');
+        }
+        return out;
+      };
+
       // Professional Experience Section
       if (cvData.experience && cvData.experience.length > 0) {
         // Filter out empty experiences or those with only placeholder values
@@ -502,7 +516,8 @@ export class CVPdfExporter {
             const jobTitle = exp.jobTitle && !exp.jobTitle.includes('[Job Title]') ? exp.jobTitle : '';
             const company = exp.company && !exp.company.includes('[Company') ? exp.company : '';
             const cityState = exp.cityState && !exp.cityState.includes('[City') ? exp.cityState : '';
-            const dates = exp.dates && !exp.dates.includes('[Start Date]') ? exp.dates : '';
+            const rawDates = exp.dates && !exp.dates.includes('[Start Date]') ? exp.dates : '';
+            const dates = normalizeDatesForLanguage(rawDates);
             
             // Only show if we have at least jobTitle or company
             if (jobTitle || company) {

@@ -3,7 +3,7 @@ import React, { useEffect, useRef, useState } from 'react';
 import { useLanguage } from '../contexts/LanguageContext.jsx';
 
 const CVPreview = ({ cvData, cvRef }) => {
-  const { t } = useLanguage();
+  const { t, language } = useLanguage();
   const contentRef = useRef(null);
   const [pages, setPages] = useState(1);
   
@@ -210,7 +210,16 @@ const CVPreview = ({ cvData, cvRef }) => {
                   const jobTitle = exp.jobTitle && !exp.jobTitle.includes('[Job Title]') ? exp.jobTitle : '';
                   const company = exp.company && !exp.company.includes('[Company') ? exp.company : '';
                   const cityState = exp.cityState && !exp.cityState.includes('[City') ? exp.cityState : '';
-                  const dates = exp.dates && !exp.dates.includes('[Start Date]') ? exp.dates : '';
+                  let dates = exp.dates && !exp.dates.includes('[Start Date]') ? exp.dates : '';
+
+                  // Normalize "Present"/"obecnie" to match current UI language
+                  if (dates) {
+                    if (language === 'pl') {
+                      dates = dates.replace(/present/gi, 'obecnie');
+                    } else {
+                      dates = dates.replace(/obecnie/gi, 'Present');
+                    }
+                  }
                   
                   const titleParts = [];
                   if (jobTitle) titleParts.push(jobTitle);
