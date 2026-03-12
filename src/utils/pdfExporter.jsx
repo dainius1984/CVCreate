@@ -35,39 +35,82 @@ export class CVPdfExporter {
           previewElement.classList.remove('exporting');
           
           if (canvas && canvas.width > 0 && canvas.height > 0) {
-            const imgData = canvas.toDataURL('image/png', 1.0);
-            
-            if (imgData && imgData.length > 100) {
-              const imgWidth = 595.28; // A4 width in points
-              const imgHeight = (canvas.height * imgWidth) / canvas.width;
-              
-              const pdf = new jsPDF({
-                orientation: 'portrait',
-                unit: 'pt',
-                format: 'a4',
-                compress: true
-              });
-              
-              const pageHeight = pdf.internal.pageSize.getHeight();
-              let heightLeft = imgHeight;
-              let position = 0;
-              
-              // Add first page
-              pdf.addImage(imgData, 'PNG', 0, position, imgWidth, imgHeight);
-              heightLeft -= pageHeight;
-              
-              // Add additional pages if needed
-              while (heightLeft > 0) {
-                position = heightLeft - imgHeight;
+            // Create PDF instance
+            const pdf = new jsPDF({
+              orientation: 'portrait',
+              unit: 'pt',
+              format: 'a4',
+              compress: true
+            });
+
+            // Desired inner margins between page edge and content (top & bottom)
+            const verticalMargin = 20; // ~20px in PDF units (points)
+            const pageWidthPt = pdf.internal.pageSize.getWidth();
+            const pageHeightPt = pdf.internal.pageSize.getHeight();
+
+            // We map the full canvas width to the full page width
+            const imgWidthPt = pageWidthPt;
+            const pxToPtScale = imgWidthPt / canvas.width;
+
+            // Height of visible content area per page (excluding top & bottom margins)
+            const contentHeightPt = pageHeightPt - verticalMargin * 2;
+            const contentHeightPx = contentHeightPt / pxToPtScale;
+
+            let sourceY = 0;
+            let pageIndex = 0;
+
+            // Slice the tall canvas into per-page chunks so we can
+            // leave real blank space (margins) at the top and bottom
+            while (sourceY < canvas.height) {
+              const sliceHeightPx = Math.min(contentHeightPx, canvas.height - sourceY);
+
+              // Create a temporary canvas for this page slice
+              const pageCanvas = document.createElement('canvas');
+              pageCanvas.width = canvas.width;
+              pageCanvas.height = sliceHeightPx;
+
+              const ctx = pageCanvas.getContext('2d');
+              if (!ctx) break;
+
+              // Copy the relevant slice from the big canvas
+              ctx.drawImage(
+                canvas,
+                0,
+                sourceY,
+                canvas.width,
+                sliceHeightPx,
+                0,
+                0,
+                canvas.width,
+                sliceHeightPx
+              );
+
+              const pageImgData = pageCanvas.toDataURL('image/png', 1.0);
+              const sliceHeightPt = sliceHeightPx * pxToPtScale;
+
+              if (pageIndex > 0) {
                 pdf.addPage();
-                pdf.addImage(imgData, 'PNG', 0, position, imgWidth, imgHeight);
-                heightLeft -= pageHeight;
               }
-              
+
+              // Draw slice with vertical margins (top & bottom)
+              pdf.addImage(
+                pageImgData,
+                'PNG',
+                0,
+                verticalMargin,
+                imgWidthPt,
+                sliceHeightPt
+              );
+
+              sourceY += sliceHeightPx;
+              pageIndex += 1;
+            }
+
+            if (pageIndex > 0) {
               const fileName = `${cvData.name.replace(/[^a-zA-Z0-9\s]/g, '').replace(/\s+/g, '_') || 'CV'}_Resume.pdf`;
               pdf.save(fileName);
-              
-              console.log('PDF generated successfully with html2canvas (Polish characters supported)');
+
+              console.log('PDF generated successfully with html2canvas (Polish characters supported, with page margins)');
               return;
             }
           }
