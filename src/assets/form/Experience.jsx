@@ -110,6 +110,23 @@ const DatePickerPopup = ({ expIndex, currentDates, onChange, onClose, language }
   const [isCurrent, setIsCurrent] = useState(false);
   const modalRef = useRef(null);
 
+  const MONTHS_EN = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
+  const MONTHS_PL = ['Styczeń', 'Luty', 'Marzec', 'Kwiecień', 'Maj', 'Czerwiec', 'Lipiec', 'Sierpień', 'Wrzesień', 'Październik', 'Listopad', 'Grudzień'];
+
+  const normalizeMonthToLanguage = (rawMonth, targetLanguage) => {
+    if (!rawMonth) return '';
+    const month = rawMonth.trim();
+    if (!month) return '';
+
+    const enIdx = MONTHS_EN.findIndex((m) => m.toLowerCase() === month.toLowerCase());
+    if (enIdx !== -1) return targetLanguage === 'pl' ? MONTHS_PL[enIdx] : MONTHS_EN[enIdx];
+
+    const plIdx = MONTHS_PL.findIndex((m) => m.toLowerCase() === month.toLowerCase());
+    if (plIdx !== -1) return targetLanguage === 'pl' ? MONTHS_PL[plIdx] : MONTHS_EN[plIdx];
+
+    return month;
+  };
+
   // Parse current dates if they exist - reset and parse when popup opens
   useEffect(() => {
     // Reset state
@@ -133,9 +150,9 @@ const DatePickerPopup = ({ expIndex, currentDates, onChange, onClose, language }
         }
         
         // Parse start date - try different formats
-        const startMatch = startPart.match(/(\w+)\s+(\d{4})/);
+        const startMatch = startPart.match(/^(.+?)\s+(\d{4})$/);
         if (startMatch) {
-          setStartMonth(startMatch[1]);
+          setStartMonth(normalizeMonthToLanguage(startMatch[1], language));
           setStartYear(startMatch[2]);
         } else {
           // Try just year
@@ -147,9 +164,9 @@ const DatePickerPopup = ({ expIndex, currentDates, onChange, onClose, language }
         
         // Parse end date
         if (!isPresent) {
-          const endMatch = endPart.match(/(\w+)\s+(\d{4})/);
+          const endMatch = endPart.match(/^(.+?)\s+(\d{4})$/);
           if (endMatch) {
-            setEndMonth(endMatch[1]);
+            setEndMonth(normalizeMonthToLanguage(endMatch[1], language));
             setEndYear(endMatch[2]);
           } else {
             // Try just year
@@ -161,9 +178,9 @@ const DatePickerPopup = ({ expIndex, currentDates, onChange, onClose, language }
         }
       } else if (parts.length === 1) {
         // Only start date
-        const startMatch = parts[0].trim().match(/(\w+)\s+(\d{4})/);
+        const startMatch = parts[0].trim().match(/^(.+?)\s+(\d{4})$/);
         if (startMatch) {
-          setStartMonth(startMatch[1]);
+          setStartMonth(normalizeMonthToLanguage(startMatch[1], language));
           setStartYear(startMatch[2]);
         }
       }
@@ -200,9 +217,7 @@ const DatePickerPopup = ({ expIndex, currentDates, onChange, onClose, language }
     };
   }, [onClose, expIndex]);
 
-  const months = language === 'pl' 
-    ? ['Styczeń', 'Luty', 'Marzec', 'Kwiecień', 'Maj', 'Czerwiec', 'Lipiec', 'Sierpień', 'Wrzesień', 'Październik', 'Listopad', 'Grudzień']
-    : ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
+  const months = language === 'pl' ? MONTHS_PL : MONTHS_EN;
 
   const currentYear = new Date().getFullYear();
   const years = Array.from({ length: 50 }, (_, i) => currentYear - i);
@@ -220,7 +235,7 @@ const DatePickerPopup = ({ expIndex, currentDates, onChange, onClose, language }
     let dateString = '';
     
     if (startMonth && startYear) {
-      dateString = `${startMonth} ${startYear}`;
+      dateString = `${normalizeMonthToLanguage(startMonth, language)} ${startYear}`;
     } else if (startYear) {
       dateString = startYear;
     }
@@ -228,7 +243,7 @@ const DatePickerPopup = ({ expIndex, currentDates, onChange, onClose, language }
     if (isCurrent) {
       dateString += ` - ${language === 'pl' ? 'obecnie' : 'Present'}`;
     } else if (endMonth && endYear) {
-      dateString += ` - ${endMonth} ${endYear}`;
+      dateString += ` - ${normalizeMonthToLanguage(endMonth, language)} ${endYear}`;
     } else if (endYear) {
       dateString += ` - ${endYear}`;
     }
