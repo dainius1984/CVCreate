@@ -1,5 +1,8 @@
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useRef, useEffect, useCallback } from 'react';
 import { useLanguage } from '../../contexts/LanguageContext.jsx';
+
+const MONTHS_EN = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
+const MONTHS_PL = ['Styczeń', 'Luty', 'Marzec', 'Kwiecień', 'Maj', 'Czerwiec', 'Lipiec', 'Sierpień', 'Wrzesień', 'Październik', 'Listopad', 'Grudzień'];
 
 const Experience = ({ experience, onChange, onAddExperience, onRemoveExperience }) => {
   const { t, language } = useLanguage();
@@ -110,10 +113,7 @@ const DatePickerPopup = ({ expIndex, currentDates, onChange, onClose, language }
   const [isCurrent, setIsCurrent] = useState(false);
   const modalRef = useRef(null);
 
-  const MONTHS_EN = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
-  const MONTHS_PL = ['Styczeń', 'Luty', 'Marzec', 'Kwiecień', 'Maj', 'Czerwiec', 'Lipiec', 'Sierpień', 'Wrzesień', 'Październik', 'Listopad', 'Grudzień'];
-
-  const normalizeMonthToLanguage = (rawMonth, targetLanguage) => {
+  const normalizeMonthToLanguage = useCallback((rawMonth, targetLanguage) => {
     if (!rawMonth) return '';
     const month = rawMonth.trim();
     if (!month) return '';
@@ -125,7 +125,7 @@ const DatePickerPopup = ({ expIndex, currentDates, onChange, onClose, language }
     if (plIdx !== -1) return targetLanguage === 'pl' ? MONTHS_PL[plIdx] : MONTHS_EN[plIdx];
 
     return month;
-  };
+  }, []);
 
   // Parse current dates if they exist - reset and parse when popup opens
   useEffect(() => {
@@ -185,7 +185,7 @@ const DatePickerPopup = ({ expIndex, currentDates, onChange, onClose, language }
         }
       }
     }
-  }, [currentDates, language]); // Re-parse when dates or language change
+  }, [currentDates, language, normalizeMonthToLanguage]); // Re-parse when dates or language change
 
   // Handle escape key and clicks outside
   useEffect(() => {

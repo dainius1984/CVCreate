@@ -196,13 +196,11 @@ export class CVPdfExporter {
       const margin = 72; // 72pts = 1 inch (top and bottom)
       const sideMargin = 54; // 54pts = 0.75 inches (left and right)
       const contentWidth = pdfWidth - (sideMargin * 2);
-      const contentHeight = pdfHeight - (margin * 2);
 
       let currentY = margin;
       const lineHeight = 14;
       const sectionSpacing = 8;
       const itemSpacing = 6;
-      const bulletIndent = 20;
       const pageBreakMargin = 40; // Extra margin when starting new page (increased for better spacing)
       const bottomMargin = 90; // Bottom margin for page breaks (larger than top margin)
 
@@ -385,7 +383,7 @@ export class CVPdfExporter {
           pdf.setLineWidth(1.2);
           pdf.circle(x + size/2, y + size/2, size/2, 'S');
           return size;
-        } catch (_e) {
+        } catch {
           return 0;
         }
       };
@@ -457,7 +455,7 @@ export class CVPdfExporter {
       // Education Section
       if (cvData.education && cvData.education.length > 0) {
         addSectionHeader(t('education'));
-        cvData.education.forEach((edu, index) => {
+        cvData.education.forEach((edu) => {
           if (edu.degree || edu.university) {
             // Degree and University
             const educationLine = `${edu.degree || '[Degree]'} | ${edu.university || '[University]'}`;
@@ -522,9 +520,6 @@ export class CVPdfExporter {
               if (clean) {
                 const respLines = pdf.splitTextToSize(clean, contentWidth);
                 estimatedHeight += Math.max(1, respLines.length) * lineHeight + 2; // +2 for spacing after each
-              } else if (original !== '') {
-                // Empty line from textarea -> visual blank line
-                estimatedHeight += lineHeight;
               }
             });
           }
@@ -648,9 +643,6 @@ export class CVPdfExporter {
                   if (clean) {
                     const respLines = pdf.splitTextToSize(clean, contentWidth);
                     totalRespHeight += Math.max(1, respLines.length) * lineHeight + 2; // +2 for spacing
-                  } else if (original !== '') {
-                    // Blank responsibility line => reserve one line of space
-                    totalRespHeight += lineHeight;
                   }
                 });
                 
@@ -668,15 +660,6 @@ export class CVPdfExporter {
                   const clean = original.replace(/\s+/g, ' ').trim();
                   if (clean) {
                     addBulletParagraph(clean, 10, [55, 65, 81]);
-                  } else if (original !== '') {
-                    // Represent an intentionally empty line from textarea
-                    const bottom = pdfHeight - bottomMargin;
-                    if (currentY + lineHeight > bottom) {
-                      pdf.addPage();
-                      currentY = margin + pageBreakMargin;
-                      drawLeftGuide();
-                    }
-                    currentY += lineHeight;
                   }
                 });
               }
