@@ -271,9 +271,11 @@ const CVPreview = ({ cvData, cvRef }) => {
                         </p>
                       )}
                   
-                  {exp.responsibilities && exp.responsibilities.length > 0 && (
+                  {exp.responsibilities && exp.responsibilities.filter((resp) => String(resp || '').trim()).length > 0 && (
                     <div className="space-y-1 text-gray-700 text-sm">
-                      {exp.responsibilities.map((resp, respIndex) => (
+                      {exp.responsibilities
+                        .filter((resp) => String(resp || '').trim())
+                        .map((resp, respIndex) => (
                         <div 
                           key={respIndex} 
                           className="leading-relaxed" 
@@ -285,11 +287,7 @@ const CVPreview = ({ cvData, cvRef }) => {
                             boxSizing: 'border-box'
                           }}
                         >
-                          {resp && resp.trim() ? (
-                            <span>{`• ${resp}`}</span>
-                          ) : (
-                            <span>&nbsp;</span>
-                          )}
+                          <span>{`• ${String(resp).trim()}`}</span>
                         </div>
                       ))}
                     </div>
