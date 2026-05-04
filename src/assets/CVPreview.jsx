@@ -15,6 +15,7 @@ const CVPreview = ({ cvData, cvRef }) => {
   const PDF_PAGE_HEIGHT_PT = 841.89;
   const PDF_VERTICAL_MARGIN_PT = 40; // must match pdfExporter html2canvas branch
   const EXPORT_SLICE_HEIGHT_PX = (PDF_PAGE_HEIGHT_PT - (PDF_VERTICAL_MARGIN_PT * 2)) * (A4_WIDTH_PX / PDF_PAGE_WIDTH_PT);
+  const PREVIEW_PAGE_GAP_PX = 20; // visual-only gap marker between pages
 
   // Re-introduce simple page-start markers (subtle)
   useEffect(() => {
@@ -60,6 +61,20 @@ const CVPreview = ({ cvData, cvRef }) => {
       {Array.from({ length: pages }, (_, i) => (
         i === 0 ? null : (
           <div key={i}>
+            {/* Visual page-gap strip (preview only) */}
+            <div
+              style={{
+                position: 'absolute',
+                left: '0px',
+                right: '0px',
+                top: `${(i * EXPORT_SLICE_HEIGHT_PX) - (PREVIEW_PAGE_GAP_PX / 2)}px`,
+                height: `${PREVIEW_PAGE_GAP_PX}px`,
+                backgroundColor: '#111827',
+                opacity: 0.85,
+                zIndex: 9,
+                pointerEvents: 'none'
+              }}
+            />
             <div
               style={{
                 position: 'absolute',
