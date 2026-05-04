@@ -11,24 +11,28 @@ const CVPreview = ({ cvData, cvRef }) => {
   const A4_WIDTH_PX = 794;
   const A4_HEIGHT_PX = 1123;
   const MARGIN_PX = 54 * (96/72); // Convert 54pt margin to pixels (72px)
-  const CONTENT_HEIGHT_PX = A4_HEIGHT_PX - (MARGIN_PX * 2);
+  const PDF_PAGE_WIDTH_PT = 595.28;
+  const PDF_PAGE_HEIGHT_PT = 841.89;
+  const PDF_VERTICAL_MARGIN_PT = 40; // must match pdfExporter html2canvas branch
+  const EXPORT_SLICE_HEIGHT_PX = (PDF_PAGE_HEIGHT_PT - (PDF_VERTICAL_MARGIN_PT * 2)) * (A4_WIDTH_PX / PDF_PAGE_WIDTH_PT);
 
   // Re-introduce simple page-start markers (subtle)
   useEffect(() => {
     const updatePages = () => {
-      const h = contentRef.current?.offsetHeight || 0;
-      const p = Math.max(1, Math.ceil(h / A4_HEIGHT_PX));
+      const h = cvRef?.current?.scrollHeight || contentRef.current?.offsetHeight || 0;
+      const p = Math.max(1, Math.ceil(h / EXPORT_SLICE_HEIGHT_PX));
       setPages(p);
     };
     updatePages();
     const ro = new ResizeObserver(updatePages);
     if (contentRef.current) ro.observe(contentRef.current);
+    if (cvRef?.current) ro.observe(cvRef.current);
     window.addEventListener('resize', updatePages);
     return () => {
       ro.disconnect();
       window.removeEventListener('resize', updatePages);
     };
-  }, []);
+  }, [cvRef, EXPORT_SLICE_HEIGHT_PX]);
 
   return (
     <div className="relative">
@@ -61,7 +65,7 @@ const CVPreview = ({ cvData, cvRef }) => {
                 position: 'absolute',
                 left: `${MARGIN_PX}px`,
                 right: `${MARGIN_PX}px`,
-                top: `${i * A4_HEIGHT_PX + MARGIN_PX}px`,
+                top: `${i * EXPORT_SLICE_HEIGHT_PX}px`,
                 height: '0px',
                 borderTop: '1px dashed rgba(37,99,235,0.45)',
                 zIndex: 10,
@@ -72,7 +76,7 @@ const CVPreview = ({ cvData, cvRef }) => {
               style={{
                 position: 'absolute',
                 left: `${MARGIN_PX + 6}px`,
-                top: `${i * A4_HEIGHT_PX + MARGIN_PX - 12}px`,
+                top: `${i * EXPORT_SLICE_HEIGHT_PX - 12}px`,
                 backgroundColor: 'rgba(37,99,235,0.12)',
                 color: '#2563eb',
                 fontSize: '10px',

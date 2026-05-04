@@ -61,10 +61,11 @@ export class CVPdfExporter {
             const approxLineHeightPx = 24;
             const minSlicePx = Math.max(260, contentHeightPx * 0.5);
 
-            // Collect content-aware "protected starts" in preview coordinates.
-            // We avoid slicing shortly after these starts, so headings/dates are
-            // less likely to be left orphaned at the bottom of a page.
+            // Collect content-aware "protected starts" and ranges in preview coordinates.
+            // We avoid slicing shortly after starts and avoid slicing inside critical ranges
+            // (especially skills), so section headers don't get orphaned.
             const protectedStarts = [];
+            const protectedRanges = [];
             const protectedSelectors = [
               '[data-section^="experience-"]',
               '[data-section="skills"]',
@@ -76,12 +77,18 @@ export class CVPdfExporter {
 
             protectedElements.forEach((el) => {
               const domY = Math.max(0, el.offsetTop || 0);
+              const domEndY = domY + Math.max(0, el.offsetHeight || 0);
               const canvasY = Math.round(domY * domToCanvasScaleY);
+              const canvasEndY = Math.round(domEndY * domToCanvasScaleY);
               if (canvasY > 0 && canvasY < canvas.height) {
                 protectedStarts.push(canvasY);
               }
+              if (canvasEndY > canvasY && canvasY < canvas.height) {
+                protectedRanges.push([canvasY, Math.min(canvas.height, canvasEndY)]);
+              }
             });
             protectedStarts.sort((a, b) => a - b);
+            protectedRanges.sort((a, b) => a[0] - b[0]);
 
             let sourceY = 0;
             let pageIndex = 0;
@@ -102,6 +109,20 @@ export class CVPdfExporter {
                   const startY = protectedStarts[i];
                   if (proposedEnd > startY && proposedEnd < startY + protectedWindowPx) {
                     const adjustedSlice = startY - sourceY;
+                    if (adjustedSlice >= minSlicePx) {
+                      sliceHeightPx = adjustedSlice;
+                    }
+                    break;
+                  }
+                }
+
+                // If cut lands inside a protected range, move cut to range start.
+                // This keeps blocks like skills together on the next page when possible.
+                const afterStartCut = sourceY + sliceHeightPx;
+                for (let i = 0; i < protectedRanges.length; i++) {
+                  const [rangeStart, rangeEnd] = protectedRanges[i];
+                  if (afterStartCut > rangeStart && afterStartCut < rangeEnd) {
+                    const adjustedSlice = rangeStart - sourceY;
                     if (adjustedSlice >= minSlicePx) {
                       sliceHeightPx = adjustedSlice;
                     }
