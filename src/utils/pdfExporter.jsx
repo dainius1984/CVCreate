@@ -59,6 +59,29 @@ export class CVPdfExporter {
             // Approximate line-height in source pixels (for smoother page cuts).
             // This helps avoid cutting text exactly in the middle of a line.
             const approxLineHeightPx = 24;
+            const minSlicePx = Math.max(260, contentHeightPx * 0.5);
+
+            // Collect content-aware "protected starts" in preview coordinates.
+            // We avoid slicing shortly after these starts, so headings/dates are
+            // less likely to be left orphaned at the bottom of a page.
+            const protectedStarts = [];
+            const protectedSelectors = [
+              '[data-section^="experience-"]',
+              '[data-section="skills"]',
+              '[data-section^="skill-item-"]'
+            ];
+            const protectedElements = previewElement.querySelectorAll(protectedSelectors.join(','));
+            const previewHeightPx = Math.max(1, previewElement.scrollHeight || previewElement.offsetHeight || 1);
+            const domToCanvasScaleY = canvas.height / previewHeightPx;
+
+            protectedElements.forEach((el) => {
+              const domY = Math.max(0, el.offsetTop || 0);
+              const canvasY = Math.round(domY * domToCanvasScaleY);
+              if (canvasY > 0 && canvasY < canvas.height) {
+                protectedStarts.push(canvasY);
+              }
+            });
+            protectedStarts.sort((a, b) => a - b);
 
             let sourceY = 0;
             let pageIndex = 0;
@@ -67,6 +90,25 @@ export class CVPdfExporter {
             // leave real blank space (margins) at the top and bottom
             while (sourceY < canvas.height) {
               let sliceHeightPx = Math.min(contentHeightPx, canvas.height - sourceY);
+              const isLastSlice = sourceY + sliceHeightPx >= canvas.height;
+
+              if (!isLastSlice) {
+                const proposedEnd = sourceY + sliceHeightPx;
+                const protectedWindowPx = 180;
+
+                // If proposed cut lands soon after a protected block start,
+                // move cut above that start to keep the block together.
+                for (let i = 0; i < protectedStarts.length; i++) {
+                  const startY = protectedStarts[i];
+                  if (proposedEnd > startY && proposedEnd < startY + protectedWindowPx) {
+                    const adjustedSlice = startY - sourceY;
+                    if (adjustedSlice >= minSlicePx) {
+                      sliceHeightPx = adjustedSlice;
+                    }
+                    break;
+                  }
+                }
+              }
 
               // Snap slice height down to a multiple of approxLineHeightPx
               // (except for the last page), so lines are more evenly distributed
@@ -256,8 +298,9 @@ export class CVPdfExporter {
 
       // Helper function to add responsibility paragraph without bullets
       const addBulletParagraph = (text, fontSize = 10, color = '#374151') => {
-        // Use full content width (no bullet indent)
-        const lines = pdf.splitTextToSize(text, contentWidth);
+        // Render first line with a bullet and wrapped continuation lines aligned.
+        const bulletPrefix = '• ';
+        const lines = pdf.splitTextToSize(text, contentWidth - 12);
         if (lines.length === 0) return;
 
         // Calculate total height needed
@@ -272,8 +315,13 @@ export class CVPdfExporter {
           drawLeftGuide();
         }
 
-        // Add text without bullet point
-        addText(text, fontSize, false, color);
+        // First wrapped line with bullet
+        addText(`${bulletPrefix}${lines[0]}`, fontSize, false, color);
+
+        // Remaining wrapped lines, indented to align with text after bullet
+        for (let i = 1; i < lines.length; i++) {
+          addText(lines[i], fontSize, false, color, 12);
+        }
         currentY += 2; // Extra spacing after paragraph
       };
 

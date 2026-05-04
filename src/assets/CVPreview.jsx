@@ -285,7 +285,11 @@ const CVPreview = ({ cvData, cvRef }) => {
                             boxSizing: 'border-box'
                           }}
                         >
-                          {resp}
+                          {resp && resp.trim() ? (
+                            <span>{`• ${resp}`}</span>
+                          ) : (
+                            <span>&nbsp;</span>
+                          )}
                         </div>
                       ))}
                     </div>
@@ -356,7 +360,7 @@ const CVPreview = ({ cvData, cvRef }) => {
                     if (!title || !content) return null;
                     
                     return (
-                      <div key={sectionId}>
+                      <div key={sectionId} data-section={`skill-item-${sectionId}`}>
                         <h3 className="text-base font-semibold text-gray-700">{title}:</h3>
                         <p className="text-gray-600 text-sm leading-relaxed whitespace-pre-line">{content}</p>
                       </div>
