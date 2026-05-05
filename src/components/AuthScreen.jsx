@@ -21,7 +21,7 @@ const AuthScreen = ({
             playsInline
             className="w-full h-full object-cover grayscale brightness-[0.4] contrast-110"
           >
-            <source src="/video%201.mp4" type="video/mp4" />
+            <source src="/video/video%201.mp4" type="video/mp4" />
           </video>
           <video
             autoPlay
@@ -30,7 +30,7 @@ const AuthScreen = ({
             playsInline
             className="hidden md:block w-full h-full object-cover grayscale brightness-[0.42] contrast-110"
           >
-            <source src="/video%202.mp4" type="video/mp4" />
+            <source src="/video/video%202.mp4" type="video/mp4" />
           </video>
         </div>
       </div>
