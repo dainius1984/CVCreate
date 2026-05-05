@@ -1,0 +1,136 @@
+import React from 'react';
+
+const CloudCVPanel = ({
+  user,
+  authLoading,
+  cloudLoading,
+  cloudError,
+  savedCVs,
+  selectedCVId,
+  onEmailLogin,
+  onGoogleLogin,
+  onLogout,
+  onSaveCurrent,
+  onSaveAsNew,
+  onLoadCV,
+  onDeleteCV,
+  onDuplicateCV,
+  disabled,
+}) => {
+  return (
+    <div className="mb-6 p-4 rounded-xl border border-gray-200 bg-gray-50">
+      <h2 className="text-lg font-semibold text-gray-800 mb-2">Cloud Account (Supabase)</h2>
+
+      {!user ? (
+        <div className="space-y-2">
+          <p className="text-sm text-gray-600">Sign in to store CVs in the cloud.</p>
+          <div className="flex flex-wrap gap-2">
+            <button
+              type="button"
+              onClick={onEmailLogin}
+              disabled={authLoading || disabled}
+              className="px-3 py-2 rounded bg-blue-600 text-white text-sm font-medium hover:bg-blue-700 disabled:opacity-60"
+            >
+              {authLoading ? 'Sending link...' : 'Email login link'}
+            </button>
+            <button
+              type="button"
+              onClick={onGoogleLogin}
+              disabled={authLoading || disabled}
+              className="px-3 py-2 rounded bg-gray-800 text-white text-sm font-medium hover:bg-black disabled:opacity-60"
+            >
+              Continue with Google
+            </button>
+          </div>
+        </div>
+      ) : (
+        <div className="space-y-3">
+          <div className="flex flex-wrap items-center justify-between gap-2">
+            <p className="text-sm text-gray-700">
+              Logged in as <span className="font-semibold">{user.email}</span>
+            </p>
+            <button
+              type="button"
+              onClick={onLogout}
+              disabled={authLoading}
+              className="px-3 py-1.5 rounded bg-gray-200 text-gray-800 text-sm font-medium hover:bg-gray-300 disabled:opacity-60"
+            >
+              Logout
+            </button>
+          </div>
+
+          <button
+            type="button"
+            onClick={onSaveCurrent}
+            disabled={cloudLoading || !selectedCVId}
+            className="px-3 py-2 rounded bg-emerald-600 text-white text-sm font-semibold hover:bg-emerald-700 disabled:opacity-60"
+          >
+            {cloudLoading ? 'Saving...' : 'Update selected CV'}
+          </button>
+
+          <button
+            type="button"
+            onClick={onSaveAsNew}
+            disabled={cloudLoading}
+            className="px-3 py-2 rounded bg-blue-600 text-white text-sm font-semibold hover:bg-blue-700 disabled:opacity-60"
+          >
+            {cloudLoading ? 'Saving...' : 'Save as new CV'}
+          </button>
+
+          <div>
+            <p className="text-sm font-medium text-gray-700 mb-2">Saved CVs</p>
+            {savedCVs.length === 0 ? (
+              <p className="text-sm text-gray-500">No cloud CVs yet.</p>
+            ) : (
+              <div className="space-y-2 max-h-48 overflow-auto pr-1">
+                {savedCVs.map((item) => (
+                  <div
+                    key={item.id}
+                    className={`flex items-center justify-between gap-2 bg-white border rounded p-2 ${
+                      selectedCVId === item.id ? 'border-blue-500 ring-1 ring-blue-200' : 'border-gray-200'
+                    }`}
+                  >
+                    <div className="min-w-0">
+                      <p className="text-sm font-semibold text-gray-800 truncate">{item.title || 'Untitled CV'}</p>
+                      <p className="text-xs text-gray-500">
+                        {new Date(item.updated_at || item.created_at).toLocaleString()}
+                      </p>
+                    </div>
+                    <div className="flex gap-2 shrink-0">
+                      <button
+                        type="button"
+                        onClick={() => onLoadCV(item.id)}
+                        className="px-2 py-1 rounded bg-blue-100 text-blue-700 text-xs font-medium hover:bg-blue-200"
+                      >
+                        Open
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => onDuplicateCV(item.id)}
+                        className="px-2 py-1 rounded bg-violet-100 text-violet-700 text-xs font-medium hover:bg-violet-200"
+                      >
+                        Duplicate
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => onDeleteCV(item.id)}
+                        className="px-2 py-1 rounded bg-red-100 text-red-700 text-xs font-medium hover:bg-red-200"
+                      >
+                        Delete
+                      </button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+
+      {cloudError ? <p className="text-sm text-red-600 mt-3">{cloudError}</p> : null}
+    </div>
+  );
+};
+
+export default CloudCVPanel;
+

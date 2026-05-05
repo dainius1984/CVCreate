@@ -4,6 +4,7 @@ import CVForm from '../assets/CVForm.jsx';
 import SaveAsPdfButton from '../assets/SaveAsPdfButton.jsx';
 import ExportJsonButton from '../assets/ExportJsonButton.jsx';
 import ImportJsonButton from '../assets/ImportJsonButton.jsx';
+import CloudCVPanel from './CloudCVPanel.jsx';
 
 const CVBuilderLayout = ({ 
   cvData, 
@@ -21,7 +22,22 @@ const CVBuilderLayout = ({
   handleMoveSkillSection,
   handlePdfExport, 
   importCVData, 
-  mergeCVData 
+  mergeCVData,
+  authUser,
+  authLoading,
+  cloudLoading,
+  cloudError,
+  savedCVs,
+  onEmailLogin,
+  onGoogleLogin,
+  onLogout,
+  onSaveCurrentCV,
+  onSaveAsNewCloudCV,
+  onLoadCloudCV,
+  onDeleteCloudCV,
+  onDuplicateCloudCV,
+  selectedCloudCVId,
+  supabaseConfigured,
 }) => {
   const { language, setLanguage, t } = useLanguage();
   
@@ -54,6 +70,24 @@ const CVBuilderLayout = ({
           </div>
         </div>
         <p className="text-gray-600 mb-6">{t('fillForm')}</p>
+
+        <CloudCVPanel
+          user={authUser}
+          authLoading={authLoading}
+          cloudLoading={cloudLoading}
+          cloudError={cloudError}
+          savedCVs={savedCVs}
+          selectedCVId={selectedCloudCVId}
+          onEmailLogin={onEmailLogin}
+          onGoogleLogin={onGoogleLogin}
+          onLogout={onLogout}
+          onSaveCurrent={onSaveCurrentCV}
+          onSaveAsNew={onSaveAsNewCloudCV}
+          onLoadCV={onLoadCloudCV}
+          onDeleteCV={onDeleteCloudCV}
+          onDuplicateCV={onDuplicateCloudCV}
+          disabled={!supabaseConfigured}
+        />
         
         <CVForm
           cvData={cvData}
