@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 
 const AuthScreen = ({
   authLoading,
@@ -9,30 +9,32 @@ const AuthScreen = ({
   supabaseConfigured,
 }) => {
   const [email, setEmail] = useState('');
+  const [videoIndex, setVideoIndex] = useState(0);
+  const videoRef = useRef(null);
+  const videoSources = ['/video/1.mp4', '/video/2.mp4'];
+
+  useEffect(() => {
+    if (!videoRef.current) return;
+    videoRef.current.playbackRate = 0.75; // slower playback
+  }, [videoIndex]);
 
   return (
     <div className="min-h-screen relative overflow-hidden bg-gray-950">
       <div className="absolute inset-0">
-        <div className="grid grid-cols-1 md:grid-cols-2 h-full">
-          <video
-            autoPlay
-            muted
-            loop
-            playsInline
-            className="w-full h-full object-cover grayscale brightness-[0.4] contrast-110"
-          >
-            <source src="/video/1.mp4" type="video/mp4" />
-          </video>
-          <video
-            autoPlay
-            muted
-            loop
-            playsInline
-            className="hidden md:block w-full h-full object-cover grayscale brightness-[0.42] contrast-110"
-          >
-            <source src="/video/2.mp4" type="video/mp4" />
-          </video>
-        </div>
+        <video
+          key={videoSources[videoIndex]}
+          ref={videoRef}
+          autoPlay
+          muted
+          playsInline
+          onEnded={() => setVideoIndex((prev) => (prev + 1) % videoSources.length)}
+          onLoadedMetadata={() => {
+            if (videoRef.current) videoRef.current.playbackRate = 0.75;
+          }}
+          className="w-full h-full object-cover grayscale brightness-[0.38] contrast-110 blur-[10px] scale-105"
+        >
+          <source src={videoSources[videoIndex]} type="video/mp4" />
+        </video>
       </div>
 
       <div className="absolute inset-0 bg-gradient-to-b from-black/55 via-black/45 to-black/65" />

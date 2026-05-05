@@ -35,7 +35,7 @@ const RightCloudDrawer = ({
       <button
         type="button"
         onClick={() => setOpen(true)}
-        className="fixed right-4 top-4 z-40 px-4 py-2 rounded-lg bg-white border border-gray-300 shadow text-sm font-semibold text-gray-800 hover:bg-gray-50"
+        className="fixed left-4 top-4 z-40 px-4 py-2 rounded-lg bg-white border border-gray-300 shadow text-sm font-semibold text-gray-800 hover:bg-gray-50"
       >
         My CVs
       </button>
@@ -50,8 +50,8 @@ const RightCloudDrawer = ({
       ) : null}
 
       <aside
-        className={`fixed top-0 right-0 h-full w-full sm:w-[440px] bg-white z-50 shadow-2xl border-l border-gray-200 transform transition-transform duration-300 ${
-          open ? 'translate-x-0' : 'translate-x-full'
+        className={`fixed top-0 left-0 h-full w-full sm:w-[440px] bg-white z-50 shadow-2xl border-r border-gray-200 transform transition-transform duration-300 ${
+          open ? 'translate-x-0' : '-translate-x-full'
         }`}
       >
         <div className="h-full overflow-y-auto p-4">

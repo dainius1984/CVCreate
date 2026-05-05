@@ -86,11 +86,11 @@ const CloudCVPanel = ({
                 {savedCVs.map((item) => (
                   <div
                     key={item.id}
-                    className={`flex items-center justify-between gap-2 bg-white border rounded p-2 ${
+                    className={`bg-white border rounded p-2 ${
                       selectedCVId === item.id ? 'border-blue-500 ring-1 ring-blue-200' : 'border-gray-200'
                     }`}
                   >
-                    <div className="min-w-0">
+                    <div className="min-w-0 mb-2">
                       <p className="text-sm font-semibold text-gray-800 truncate">
                         {item.position_name || item.title || 'Untitled CV'}
                       </p>
@@ -99,10 +99,15 @@ const CloudCVPanel = ({
                           href={item.job_url}
                           target="_blank"
                           rel="noreferrer"
-                          className="text-xs text-blue-600 hover:underline truncate block"
+                          className="text-xs text-blue-600 hover:underline block break-all"
                         >
-                          Job URL
+                          {item.job_url}
                         </a>
+                      ) : null}
+                      {selectedCVId === item.id && item.job_description ? (
+                        <p className="text-xs text-gray-700 mt-1 whitespace-pre-line max-h-24 overflow-auto pr-1">
+                          {item.job_description}
+                        </p>
                       ) : null}
                       <p className="text-xs text-gray-500">
                         {new Date(item.updated_at || item.created_at).toLocaleString()}
@@ -114,7 +119,7 @@ const CloudCVPanel = ({
                         onClick={() => onLoadCV(item.id)}
                         className="px-2 py-1 rounded bg-blue-100 text-blue-700 text-xs font-medium hover:bg-blue-200"
                       >
-                        Open
+                        {selectedCVId === item.id ? 'Opened' : 'Open'}
                       </button>
                       <button
                         type="button"
