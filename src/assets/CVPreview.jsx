@@ -16,6 +16,7 @@ const CVPreview = ({ cvData, cvRef }) => {
   const PDF_VERTICAL_MARGIN_PT = 40; // must match pdfExporter html2canvas branch
   const EXPORT_SLICE_HEIGHT_PX = (PDF_PAGE_HEIGHT_PT - (PDF_VERTICAL_MARGIN_PT * 2)) * (A4_WIDTH_PX / PDF_PAGE_WIDTH_PT);
   const PREVIEW_PAGE_GAP_PX = 20; // visual-only gap marker between pages
+  const PREVIEW_VERTICAL_MARGIN_PX = PDF_VERTICAL_MARGIN_PT * (A4_WIDTH_PX / PDF_PAGE_WIDTH_PT);
 
   // Re-introduce simple page-start markers (subtle)
   useEffect(() => {
@@ -61,17 +62,43 @@ const CVPreview = ({ cvData, cvRef }) => {
       {Array.from({ length: pages }, (_, i) => (
         i === 0 ? null : (
           <div key={i}>
-            {/* Visual page-gap strip (preview only) */}
+            {/* Bottom margin mask for previous page */}
             <div
               style={{
                 position: 'absolute',
                 left: '0px',
                 right: '0px',
-                top: `${(i * EXPORT_SLICE_HEIGHT_PX) - (PREVIEW_PAGE_GAP_PX / 2)}px`,
+                top: `${(i * EXPORT_SLICE_HEIGHT_PX) - PREVIEW_VERTICAL_MARGIN_PX}px`,
+                height: `${PREVIEW_VERTICAL_MARGIN_PX}px`,
+                backgroundColor: '#ffffff',
+                zIndex: 8,
+                pointerEvents: 'none'
+              }}
+            />
+            {/* Visual gap between pages */}
+            <div
+              style={{
+                position: 'absolute',
+                left: '0px',
+                right: '0px',
+                top: `${i * EXPORT_SLICE_HEIGHT_PX}px`,
                 height: `${PREVIEW_PAGE_GAP_PX}px`,
                 backgroundColor: '#111827',
                 opacity: 0.85,
                 zIndex: 9,
+                pointerEvents: 'none'
+              }}
+            />
+            {/* Top margin mask for next page */}
+            <div
+              style={{
+                position: 'absolute',
+                left: '0px',
+                right: '0px',
+                top: `${(i * EXPORT_SLICE_HEIGHT_PX) + PREVIEW_PAGE_GAP_PX}px`,
+                height: `${PREVIEW_VERTICAL_MARGIN_PX}px`,
+                backgroundColor: '#ffffff',
+                zIndex: 8,
                 pointerEvents: 'none'
               }}
             />
@@ -80,7 +107,7 @@ const CVPreview = ({ cvData, cvRef }) => {
                 position: 'absolute',
                 left: `${MARGIN_PX}px`,
                 right: `${MARGIN_PX}px`,
-                top: `${i * EXPORT_SLICE_HEIGHT_PX}px`,
+                top: `${(i * EXPORT_SLICE_HEIGHT_PX) + PREVIEW_PAGE_GAP_PX + PREVIEW_VERTICAL_MARGIN_PX}px`,
                 height: '0px',
                 borderTop: '1px dashed rgba(37,99,235,0.45)',
                 zIndex: 10,
@@ -91,7 +118,7 @@ const CVPreview = ({ cvData, cvRef }) => {
               style={{
                 position: 'absolute',
                 left: `${MARGIN_PX + 6}px`,
-                top: `${i * EXPORT_SLICE_HEIGHT_PX - 12}px`,
+                top: `${(i * EXPORT_SLICE_HEIGHT_PX) + PREVIEW_PAGE_GAP_PX + PREVIEW_VERTICAL_MARGIN_PX - 12}px`,
                 backgroundColor: 'rgba(37,99,235,0.12)',
                 color: '#2563eb',
                 fontSize: '10px',
