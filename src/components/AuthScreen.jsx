@@ -31,7 +31,7 @@ const AuthScreen = ({
           onLoadedMetadata={() => {
             if (videoRef.current) videoRef.current.playbackRate = 0.75;
           }}
-          className="w-full h-full object-cover grayscale brightness-[0.38] contrast-110 blur-[10px] scale-105"
+          className="w-full h-full object-cover grayscale brightness-[0.38] contrast-110 blur-[9px] scale-105"
         >
           <source src={videoSources[videoIndex]} type="video/mp4" />
         </video>
