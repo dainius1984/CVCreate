@@ -91,7 +91,19 @@ const CloudCVPanel = ({
                     }`}
                   >
                     <div className="min-w-0">
-                      <p className="text-sm font-semibold text-gray-800 truncate">{item.title || 'Untitled CV'}</p>
+                      <p className="text-sm font-semibold text-gray-800 truncate">
+                        {item.position_name || item.title || 'Untitled CV'}
+                      </p>
+                      {item.job_url ? (
+                        <a
+                          href={item.job_url}
+                          target="_blank"
+                          rel="noreferrer"
+                          className="text-xs text-blue-600 hover:underline truncate block"
+                        >
+                          Job URL
+                        </a>
+                      ) : null}
                       <p className="text-xs text-gray-500">
                         {new Date(item.updated_at || item.created_at).toLocaleString()}
                       </p>

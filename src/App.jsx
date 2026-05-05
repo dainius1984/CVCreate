@@ -6,6 +6,8 @@ import CVBuilderLayout from './components/CVBuilderLayout.jsx';
 import PreviewContainer from './components/PreviewContainer.jsx';
 import { isSupabaseConfigured, supabase } from './lib/supabaseClient.js';
 import AuthScreen from './components/AuthScreen.jsx';
+import SaveCVModal from './components/SaveCVModal.jsx';
+import RightCloudDrawer from './components/RightCloudDrawer.jsx';
 
 // Main App component
 const AppContent = () => {
@@ -18,6 +20,13 @@ const AppContent = () => {
   const [savedCVs, setSavedCVs] = useState([]);
   const [selectedCloudCVId, setSelectedCloudCVId] = useState(null);
   const [guestMode, setGuestMode] = useState(false);
+  const [saveModalOpen, setSaveModalOpen] = useState(false);
+  const [saveMode, setSaveMode] = useState('new');
+  const [saveInitialValues, setSaveInitialValues] = useState({
+    positionName: '',
+    jobUrl: '',
+    jobDescription: '',
+  });
   const {
     cvData,
     handleDataChange,
@@ -42,7 +51,7 @@ const AppContent = () => {
     if (!supabase || !userId) return;
     const { data, error } = await supabase
       .from('cvs')
-      .select('id, title, language, updated_at, created_at')
+      .select('id, title, language, position_name, job_url, job_description, updated_at, created_at')
       .eq('user_id', userId)
       .order('updated_at', { ascending: false });
 
@@ -133,17 +142,49 @@ const AppContent = () => {
     if (error) setCloudError(error.message);
   };
 
-  const onSaveCurrentCV = async () => {
+  const getSelectedCVMeta = () => {
+    const selected = savedCVs.find((item) => item.id === selectedCloudCVId);
+    return {
+      positionName: selected?.position_name || selected?.title || '',
+      jobUrl: selected?.job_url || '',
+      jobDescription: selected?.job_description || '',
+    };
+  };
+
+  const openSaveModal = (mode) => {
+    const basePosition = cvData.title?.trim() || cvData.name?.trim() || '';
+    if (mode === 'update') {
+      setSaveInitialValues(getSelectedCVMeta());
+    } else {
+      setSaveInitialValues({
+        positionName: basePosition,
+        jobUrl: '',
+        jobDescription: '',
+      });
+    }
+    setSaveMode(mode);
+    setSaveModalOpen(true);
+  };
+
+  const onSaveCurrentCV = () => {
     if (!selectedCloudCVId) {
       setCloudError('Open a CV from cloud list first, or use "Save as new CV".');
       return;
     }
+    openSaveModal('update');
+  };
+
+  const saveCurrentCVWithMeta = async ({ positionName, jobUrl, jobDescription }) => {
     if (!supabase || !authUser) return;
     setCloudLoading(true);
     setCloudError('');
 
+    const resolvedPosition = positionName || cvData.title?.trim() || cvData.name?.trim() || 'My CV';
     const payload = {
-      title: cvData.name?.trim() ? `${cvData.name} CV` : 'My CV',
+      title: resolvedPosition,
+      position_name: resolvedPosition,
+      job_url: jobUrl || null,
+      job_description: jobDescription || null,
       language,
       cv_data: cvData,
       updated_at: new Date().toISOString(),
@@ -159,16 +200,25 @@ const AppContent = () => {
       setCloudError(error.message);
       return;
     }
+    setSaveModalOpen(false);
     loadSavedCVs(authUser.id);
   };
 
-  const onSaveAsNewCloudCV = async () => {
+  const onSaveAsNewCloudCV = () => {
+    openSaveModal('new');
+  };
+
+  const saveAsNewCloudCVWithMeta = async ({ positionName, jobUrl, jobDescription }) => {
     if (!supabase || !authUser) return;
     setCloudLoading(true);
     setCloudError('');
+    const resolvedPosition = positionName || cvData.title?.trim() || cvData.name?.trim() || 'My CV';
     const payload = {
       user_id: authUser.id,
-      title: cvData.name?.trim() ? `${cvData.name} CV` : 'My CV',
+      title: resolvedPosition,
+      position_name: resolvedPosition,
+      job_url: jobUrl || null,
+      job_description: jobDescription || null,
       language,
       cv_data: cvData,
       updated_at: new Date().toISOString(),
@@ -179,6 +229,7 @@ const AppContent = () => {
       setCloudError(error.message);
       return;
     }
+    setSaveModalOpen(false);
     if (data?.id) {
       setSelectedCloudCVId(data.id);
     }
@@ -232,7 +283,7 @@ const AppContent = () => {
     setCloudError('');
     const { data, error } = await supabase
       .from('cvs')
-      .select('title, language, cv_data')
+      .select('title, position_name, job_url, job_description, language, cv_data')
       .eq('id', cvId)
       .eq('user_id', authUser.id)
       .single();
@@ -243,7 +294,10 @@ const AppContent = () => {
     }
     const insertPayload = {
       user_id: authUser.id,
-      title: `${data.title || 'My CV'} (Copy)`,
+      title: `${data.position_name || data.title || 'My CV'} (Copy)`,
+      position_name: `${data.position_name || data.title || 'My CV'} (Copy)`,
+      job_url: data.job_url || null,
+      job_description: data.job_description || null,
       language: data.language || language,
       cv_data: data.cv_data || cvData,
       updated_at: new Date().toISOString(),
@@ -277,14 +331,28 @@ const AppContent = () => {
     );
   }
 
+  const handleModalSubmit = async (meta) => {
+    if (saveMode === 'update') {
+      await saveCurrentCVWithMeta(meta);
+      return;
+    }
+    await saveAsNewCloudCVWithMeta(meta);
+  };
+
 
   return (
     <div className="flex flex-col lg:flex-row h-screen p-4 bg-gray-100 font-sans">
+      <SaveCVModal
+        open={saveModalOpen}
+        mode={saveMode}
+        initialValues={saveInitialValues}
+        loading={cloudLoading}
+        onClose={() => setSaveModalOpen(false)}
+        onSubmit={handleModalSubmit}
+      />
       <CVBuilderLayout
         cvData={cvData}
         handleDataChange={handleDataChange}
-        handleAddResponsibility={handleAddResponsibility}
-        handleRemoveResponsibility={handleRemoveResponsibility}
         handleAddExperience={handleAddExperience}
         handleRemoveExperience={handleRemoveExperience}
         handleAddEducation={handleAddEducation}
@@ -293,12 +361,15 @@ const AppContent = () => {
         handleRemoveCustomSkill={handleRemoveCustomSkill}
         handlePdfExport={handlePdfExport}
         importCVData={importCVData}
-        mergeCVData={mergeCVData}
+      />
+      <PreviewContainer cvData={cvData} cvRef={cvRef} />
+      <RightCloudDrawer
         authUser={authUser}
         authLoading={authLoading}
         cloudLoading={cloudLoading}
         cloudError={cloudError}
         savedCVs={savedCVs}
+        selectedCloudCVId={selectedCloudCVId}
         onEmailLogin={onEmailLogin}
         onGoogleLogin={onGoogleLogin}
         onLogout={onLogout}
@@ -307,10 +378,8 @@ const AppContent = () => {
         onLoadCloudCV={onLoadCloudCV}
         onDeleteCloudCV={onDeleteCloudCV}
         onDuplicateCloudCV={onDuplicateCloudCV}
-        selectedCloudCVId={selectedCloudCVId}
         supabaseConfigured={isSupabaseConfigured}
       />
-      <PreviewContainer cvData={cvData} cvRef={cvRef} />
     </div>
   );
 };
