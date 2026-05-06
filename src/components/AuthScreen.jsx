@@ -11,25 +11,66 @@ const AuthScreen = ({
   const [email, setEmail] = useState('');
   const [videoIndex, setVideoIndex] = useState(0);
   const videoRef = useRef(null);
+  const preloadedVideosRef = useRef([]);
   const videoSources = ['/video/1.mp4', '/video/2.mp4'];
+
+  // Preload all background videos once for smoother switching.
+  useEffect(() => {
+    preloadedVideosRef.current = videoSources.map((src) => {
+      const v = document.createElement('video');
+      v.src = src;
+      v.preload = 'auto';
+      v.muted = true;
+      v.playsInline = true;
+      v.load();
+      return v;
+    });
+    return () => {
+      preloadedVideosRef.current.forEach((v) => {
+        v.pause();
+        v.removeAttribute('src');
+        v.load();
+      });
+      preloadedVideosRef.current = [];
+    };
+  }, []);
 
   useEffect(() => {
     if (!videoRef.current) return;
-    videoRef.current.playbackRate = 0.75; // slower playback
+    videoRef.current.playbackRate = 0.9; // still calm, less "too slow"
   }, [videoIndex]);
+
+  const playCurrentVideo = async () => {
+    if (!videoRef.current) return;
+    try {
+      videoRef.current.currentTime = 0;
+      await videoRef.current.play();
+    } catch {
+      // Autoplay may fail in rare browser states; user interaction will recover.
+    }
+  };
+
+  const handleVideoEnded = async () => {
+    const nextIndex = (videoIndex + 1) % videoSources.length;
+    setVideoIndex(nextIndex);
+    if (!videoRef.current) return;
+    videoRef.current.src = videoSources[nextIndex];
+    videoRef.current.playbackRate = 0.9;
+    await playCurrentVideo();
+  };
 
   return (
     <div className="min-h-screen relative overflow-hidden bg-gray-950">
       <div className="absolute inset-0">
         <video
-          key={videoSources[videoIndex]}
           ref={videoRef}
           autoPlay
           muted
           playsInline
-          onEnded={() => setVideoIndex((prev) => (prev + 1) % videoSources.length)}
+          preload="auto"
+          onEnded={handleVideoEnded}
           onLoadedMetadata={() => {
-            if (videoRef.current) videoRef.current.playbackRate = 0.75;
+            if (videoRef.current) videoRef.current.playbackRate = 0.9;
           }}
           className="w-full h-full object-cover grayscale brightness-[0.38] contrast-110 blur-[9px] scale-105"
         >
