@@ -64,6 +64,7 @@ const AuthScreen = ({
       <div className="absolute inset-0">
         <video
           ref={videoRef}
+          src={videoSources[videoIndex]}
           autoPlay
           muted
           playsInline
@@ -73,9 +74,7 @@ const AuthScreen = ({
             if (videoRef.current) videoRef.current.playbackRate = 0.9;
           }}
           className="w-full h-full object-cover grayscale brightness-[0.38] contrast-110 blur-[9px] scale-105"
-        >
-          <source src={videoSources[videoIndex]} type="video/mp4" />
-        </video>
+        />
       </div>
 
       <div className="absolute inset-0 bg-gradient-to-b from-black/55 via-black/45 to-black/65" />

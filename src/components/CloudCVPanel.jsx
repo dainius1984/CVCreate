@@ -86,9 +86,10 @@ const CloudCVPanel = ({
                 {savedCVs.map((item) => (
                   <div
                     key={item.id}
+                    onClick={() => onLoadCV(item.id)}
                     className={`bg-white border rounded p-2 ${
                       selectedCVId === item.id ? 'border-blue-500 ring-1 ring-blue-200' : 'border-gray-200'
-                    }`}
+                    } cursor-pointer hover:border-blue-300`}
                   >
                     <div className="min-w-0 mb-2">
                       <p className="text-sm font-semibold text-gray-800 truncate">
@@ -114,7 +115,7 @@ const CloudCVPanel = ({
                             className="text-xs text-gray-600 mt-1 overflow-hidden"
                             style={{
                               display: '-webkit-box',
-                              WebkitLineClamp: 2,
+                              WebkitLineClamp: 3,
                               WebkitBoxOrient: 'vertical',
                             }}
                           >
@@ -131,21 +132,30 @@ const CloudCVPanel = ({
                     <div className="flex gap-2 shrink-0">
                       <button
                         type="button"
-                        onClick={() => onLoadCV(item.id)}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          onLoadCV(item.id);
+                        }}
                         className="px-2 py-1 rounded bg-blue-100 text-blue-700 text-xs font-medium hover:bg-blue-200"
                       >
                         {selectedCVId === item.id ? 'Opened' : 'Open'}
                       </button>
                       <button
                         type="button"
-                        onClick={() => onDuplicateCV(item.id)}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          onDuplicateCV(item.id);
+                        }}
                         className="px-2 py-1 rounded bg-violet-100 text-violet-700 text-xs font-medium hover:bg-violet-200"
                       >
                         Duplicate
                       </button>
                       <button
                         type="button"
-                        onClick={() => onDeleteCV(item.id)}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          onDeleteCV(item.id);
+                        }}
                         className="px-2 py-1 rounded bg-red-100 text-red-700 text-xs font-medium hover:bg-red-200"
                       >
                         Delete
