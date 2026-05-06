@@ -58,7 +58,7 @@ const RightCloudDrawer = ({
       >
         <div className="h-full overflow-y-auto p-4">
           <div className="flex items-center justify-between mb-4">
-            <h2 className="text-xl font-bold text-gray-800">My account</h2>
+            <h2 className="text-xl font-bold text-gray-800">My Workspace</h2>
             <button
               type="button"
               onClick={() => setOpen(false)}
@@ -69,9 +69,9 @@ const RightCloudDrawer = ({
           </div>
 
           <div className="mb-4 p-3 rounded-xl border border-gray-200 bg-gray-50">
-            <p className="text-sm text-gray-500">Profile</p>
+            <p className="text-sm text-gray-500">Account</p>
             <p className="text-base font-semibold text-gray-800">{profileName}</p>
-            <p className="text-sm text-gray-600 break-all">{authUser?.email || 'Not logged in'}</p>
+            <p className="text-sm text-gray-600 break-all">{authUser?.email || 'Not signed in'}</p>
           </div>
 
           <CloudCVPanel

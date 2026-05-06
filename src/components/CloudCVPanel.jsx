@@ -19,11 +19,12 @@ const CloudCVPanel = ({
 }) => {
   return (
     <div className="mb-6 p-4 rounded-xl border border-gray-200 bg-gray-50">
-      <h2 className="text-lg font-semibold text-gray-800 mb-2">Cloud Account (Supabase)</h2>
+      <h2 className="text-lg font-semibold text-gray-800 mb-1">My CV Library</h2>
+      <p className="text-xs text-gray-500 mb-2">Save role-specific versions and reopen them anytime.</p>
 
       {!user ? (
         <div className="space-y-2">
-          <p className="text-sm text-gray-600">Sign in to store CVs in the cloud.</p>
+          <p className="text-sm text-gray-600">Sign in to save CVs and track job applications.</p>
           <div className="flex flex-wrap gap-2">
             <button
               type="button"
@@ -31,7 +32,7 @@ const CloudCVPanel = ({
               disabled={authLoading || disabled}
               className="px-3 py-2 rounded bg-blue-600 text-white text-sm font-medium hover:bg-blue-700 disabled:opacity-60"
             >
-              {authLoading ? 'Sending link...' : 'Email login link'}
+              {authLoading ? 'Sending link...' : 'Continue with Email'}
             </button>
             <button
               type="button"
@@ -47,7 +48,7 @@ const CloudCVPanel = ({
         <div className="space-y-3">
           <div className="flex flex-wrap items-center justify-between gap-2">
             <p className="text-sm text-gray-700">
-              Logged in as <span className="font-semibold">{user.email}</span>
+              Signed in as <span className="font-semibold">{user.email}</span>
             </p>
             <button
               type="button"
@@ -55,7 +56,7 @@ const CloudCVPanel = ({
               disabled={authLoading}
               className="px-3 py-1.5 rounded bg-gray-200 text-gray-800 text-sm font-medium hover:bg-gray-300 disabled:opacity-60"
             >
-              Logout
+              Sign out
             </button>
           </div>
 
@@ -65,7 +66,7 @@ const CloudCVPanel = ({
             disabled={cloudLoading || !selectedCVId}
             className="px-3 py-2 rounded bg-emerald-600 text-white text-sm font-semibold hover:bg-emerald-700 disabled:opacity-60"
           >
-            {cloudLoading ? 'Saving...' : 'Update selected CV'}
+            {cloudLoading ? 'Saving...' : 'Update current CV'}
           </button>
 
           <button
@@ -74,13 +75,13 @@ const CloudCVPanel = ({
             disabled={cloudLoading}
             className="px-3 py-2 rounded bg-blue-600 text-white text-sm font-semibold hover:bg-blue-700 disabled:opacity-60"
           >
-            {cloudLoading ? 'Saving...' : 'Save as new CV'}
+            {cloudLoading ? 'Saving...' : 'Save new CV version'}
           </button>
 
           <div>
             <p className="text-sm font-medium text-gray-700 mb-2">Saved CVs</p>
             {savedCVs.length === 0 ? (
-              <p className="text-sm text-gray-500">No cloud CVs yet.</p>
+              <p className="text-sm text-gray-500">No saved CVs yet.</p>
             ) : (
               <div className="space-y-3 max-h-[70vh] overflow-auto pr-1">
                 {savedCVs.map((item) => (

@@ -82,10 +82,10 @@ const AuthScreen = ({
       <div className="relative z-10 min-h-screen flex items-center justify-center p-4">
         <div className="w-full max-w-lg bg-white/92 backdrop-blur-md rounded-2xl shadow-2xl p-6 md:p-8 border border-white/80">
           <div className="mb-6">
-            <p className="text-xs font-semibold uppercase tracking-wider text-blue-700">CVCreate Cloud</p>
-            <h1 className="text-3xl font-bold text-gray-900 mt-1">Login / Signup</h1>
+            <p className="text-xs font-semibold uppercase tracking-wider text-blue-700">CVCreate</p>
+            <h1 className="text-3xl font-bold text-gray-900 mt-1">Welcome back</h1>
             <p className="text-sm text-gray-700 mt-2">
-              Sign in with Google or get a magic link by email to store and manage your CV versions.
+              Sign in to save your CV versions, job links, and notes in one place.
             </p>
           </div>
 
@@ -106,7 +106,7 @@ const AuthScreen = ({
               disabled={authLoading || !supabaseConfigured}
               className="w-full px-3 py-2.5 rounded-lg bg-blue-600 text-white font-semibold hover:bg-blue-700 disabled:opacity-60"
             >
-              {authLoading ? 'Sending link...' : 'Send email login link'}
+              {authLoading ? 'Sending link...' : 'Continue with Email'}
             </button>
 
             <button
@@ -123,12 +123,12 @@ const AuthScreen = ({
               onClick={onContinueWithoutAccount}
               className="w-full px-3 py-2.5 rounded-lg bg-gray-200 text-gray-800 font-semibold hover:bg-gray-300"
             >
-              Continue without account
+              Continue without signing in
             </button>
           </div>
 
           {!supabaseConfigured ? (
-            <p className="text-sm text-red-700 mt-4 font-medium">Supabase env not configured.</p>
+            <p className="text-sm text-red-700 mt-4 font-medium">Login is temporarily unavailable. Please try again shortly.</p>
           ) : null}
           {cloudError ? <p className="text-sm text-red-700 mt-3">{cloudError}</p> : null}
         </div>

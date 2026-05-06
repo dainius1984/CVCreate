@@ -28,7 +28,7 @@ const SaveCVModal = ({ open, mode, initialValues, loading, onClose, onSubmit }) 
       <form onSubmit={handleSubmit} className="w-full max-w-2xl bg-white rounded-2xl shadow-xl p-5 space-y-4">
         <div className="flex items-center justify-between">
           <h3 className="text-xl font-semibold text-gray-800">
-            {mode === 'update' ? 'Update saved CV' : 'Save new CV'}
+            {mode === 'update' ? 'Update CV version' : 'Save new CV version'}
           </h3>
           <button
             type="button"
@@ -40,7 +40,7 @@ const SaveCVModal = ({ open, mode, initialValues, loading, onClose, onSubmit }) 
         </div>
 
         <label className="block">
-          <span className="text-sm font-medium text-gray-700">Position name (shown in Saved CVs)</span>
+          <span className="text-sm font-medium text-gray-700">Position title (shown in CV Library)</span>
           <input
             type="text"
             value={positionName}
@@ -52,7 +52,7 @@ const SaveCVModal = ({ open, mode, initialValues, loading, onClose, onSubmit }) 
         </label>
 
         <label className="block">
-          <span className="text-sm font-medium text-gray-700">Job ad URL</span>
+          <span className="text-sm font-medium text-gray-700">Job post URL</span>
           <input
             type="url"
             value={jobUrl}
@@ -85,7 +85,7 @@ const SaveCVModal = ({ open, mode, initialValues, loading, onClose, onSubmit }) 
             disabled={loading}
             className="px-4 py-2 rounded bg-emerald-600 text-white hover:bg-emerald-700 disabled:opacity-60"
           >
-            {loading ? 'Saving...' : mode === 'update' ? 'Update CV' : 'Save CV'}
+            {loading ? 'Saving...' : mode === 'update' ? 'Update version' : 'Save version'}
           </button>
         </div>
       </form>
