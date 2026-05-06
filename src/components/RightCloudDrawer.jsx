@@ -32,13 +32,15 @@ const RightCloudDrawer = ({
 
   return (
     <>
-      <button
-        type="button"
-        onClick={() => setOpen(true)}
-        className="fixed left-4 top-4 z-40 px-4 py-2 rounded-lg bg-white border border-gray-300 shadow text-sm font-semibold text-gray-800 hover:bg-gray-50"
-      >
-        My CVs
-      </button>
+      {!open ? (
+        <button
+          type="button"
+          onClick={() => setOpen(true)}
+          className="fixed left-4 top-24 z-30 px-4 py-2 rounded-r-xl rounded-l-md bg-white border border-gray-300 shadow-lg text-sm font-semibold text-gray-800 hover:bg-gray-50"
+        >
+          My CVs
+        </button>
+      ) : null}
 
       {open ? (
         <button

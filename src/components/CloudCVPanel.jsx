@@ -82,7 +82,7 @@ const CloudCVPanel = ({
             {savedCVs.length === 0 ? (
               <p className="text-sm text-gray-500">No cloud CVs yet.</p>
             ) : (
-              <div className="space-y-2 max-h-48 overflow-auto pr-1">
+              <div className="space-y-3 max-h-[70vh] overflow-auto pr-1">
                 {savedCVs.map((item) => (
                   <div
                     key={item.id}
@@ -104,11 +104,26 @@ const CloudCVPanel = ({
                           {item.job_url}
                         </a>
                       ) : null}
-                      {selectedCVId === item.id && item.job_description ? (
-                        <p className="text-xs text-gray-700 mt-1 whitespace-pre-line max-h-24 overflow-auto pr-1">
-                          {item.job_description}
-                        </p>
-                      ) : null}
+                      {item.job_description ? (
+                        selectedCVId === item.id ? (
+                          <p className="text-xs text-gray-700 mt-2 whitespace-pre-line max-h-40 overflow-auto pr-1 bg-gray-50 border border-gray-200 rounded p-2">
+                            {item.job_description}
+                          </p>
+                        ) : (
+                          <p
+                            className="text-xs text-gray-600 mt-1 overflow-hidden"
+                            style={{
+                              display: '-webkit-box',
+                              WebkitLineClamp: 2,
+                              WebkitBoxOrient: 'vertical',
+                            }}
+                          >
+                            {item.job_description}
+                          </p>
+                        )
+                      ) : (
+                        <p className="text-xs text-gray-400 mt-1 italic">No job description saved.</p>
+                      )}
                       <p className="text-xs text-gray-500">
                         {new Date(item.updated_at || item.created_at).toLocaleString()}
                       </p>
