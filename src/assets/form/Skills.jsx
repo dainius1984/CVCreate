@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { useLanguage } from '../../contexts/LanguageContext.jsx';
 
-const Skills = ({ skills, onChange, onAddCustomSkill, onRemoveCustomSkill, onRemoveSkillSection, onMoveSkillSection }) => {
+const Skills = ({ skills, onChange, onAddCustomSkill, onRemoveCustomSkill, onRemoveSkillSection, onMoveSkillSection, selectedElement }) => {
   const { t, language } = useLanguage();
   const [isEditingTitle, setIsEditingTitle] = useState(false);
   
@@ -300,7 +300,15 @@ const Skills = ({ skills, onChange, onAddCustomSkill, onRemoveCustomSkill, onRem
       {/* Render sections in order */}
       {order
         .filter(sectionId => hasSection(sectionId))
-        .map(sectionId => renderSection(sectionId))}
+        .map(sectionId => (
+          <div
+            key={sectionId}
+            data-editor-item={`skill-${sectionId}`}
+            className={selectedElement?.id === `skill-${sectionId}` ? 'editor-item-active' : ''}
+          >
+            {renderSection(sectionId)}
+          </div>
+        ))}
 
       <button
         onClick={onAddCustomSkill}

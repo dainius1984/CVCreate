@@ -183,18 +183,18 @@ div.absolute.inset-0 {
   box-sizing: border-box !important;
 }
 
-/* Page break control for PDF export - prevent experience entries from breaking */
+/* Keep experience headings and individual responsibility rows intact, not whole jobs */
 #cv-preview [data-section="experience"] {
-  page-break-inside: avoid !important;
-  break-inside: avoid !important;
+  page-break-inside: auto !important;
+  break-inside: auto !important;
   margin-bottom: 12px !important;
   padding-top: 4px !important;
 }
 
-/* Prevent individual experience entries from breaking across pages */
+/* Experience entries may flow across pages */
 #cv-preview [data-section^="experience-"] {
-  page-break-inside: avoid !important;
-  break-inside: avoid !important;
+  page-break-inside: auto !important;
+  break-inside: auto !important;
   margin-bottom: 10px !important;
   padding-top: 4px !important;
   padding-bottom: 4px !important;
@@ -214,16 +214,16 @@ div.absolute.inset-0 {
 
 /* Prevent bullet points from breaking */
 #cv-preview [data-section^="experience-"] ul {
-  page-break-inside: avoid !important;
-  break-inside: avoid !important;
+  page-break-inside: auto !important;
+  break-inside: auto !important;
   width: 100% !important;
   max-width: 100% !important;
-  overflow: hidden !important;
+  overflow: visible !important;
 }
 
 #cv-preview [data-section^="experience-"] li {
-  page-break-inside: avoid !important;
-  break-inside: avoid !important;
+  page-break-inside: auto !important;
+  break-inside: auto !important;
   margin-bottom: 4px !important;
   word-wrap: break-word !important;
   overflow-wrap: break-word !important;
@@ -236,10 +236,93 @@ div.absolute.inset-0 {
   padding-top: 8px !important;
 }
 
-/* Ensure sections don't break at page boundaries */
+/* Let sections flow; page boundaries are calculated by the shared paginator */
 #cv-preview section {
-  page-break-inside: avoid !important;
-  break-inside: avoid !important;
+  page-break-inside: auto !important;
+  break-inside: auto !important;
   width: 100% !important;
   max-width: 100% !important;
 }
+
+.cv-page-boundary {
+  position: absolute;
+  left: 72px;
+  right: 72px;
+  z-index: 20;
+  border-top: 1px dashed rgba(37, 99, 235, 0.4);
+  pointer-events: none;
+}
+
+.cv-page-boundary span {
+  position: absolute;
+  top: -15px;
+  right: 0;
+  padding: 1px 4px;
+  background: #ffffff;
+  color: #2563eb;
+  font-size: 10px;
+}
+
+#cv-preview .cv-content-flow {
+  display: flex;
+  flex-direction: column;
+}
+
+#cv-preview .cv-content-flow .text-4xl {
+  font-size: calc(2.25rem * var(--cv-font-scale, 1)) !important;
+}
+
+#cv-preview .cv-content-flow .text-xl {
+  font-size: calc(1.25rem * var(--cv-font-scale, 1)) !important;
+}
+
+#cv-preview .cv-content-flow .text-lg {
+  font-size: calc(1.125rem * var(--cv-font-scale, 1)) !important;
+}
+
+#cv-preview .cv-content-flow .text-base {
+  font-size: calc(1rem * var(--cv-font-scale, 1)) !important;
+}
+
+#cv-preview .cv-content-flow .text-sm {
+  font-size: calc(0.875rem * var(--cv-font-scale, 1)) !important;
+}
+
+#cv-preview [data-editor-id] {
+  cursor: pointer;
+}
+
+#cv-preview:not(.exporting) [data-editor-id][aria-pressed="true"] {
+  outline: 2px solid #2563eb !important;
+  outline-offset: 2px !important;
+  border-radius: 2px;
+}
+
+.editor-section-active {
+  border-left: 3px solid #2563eb;
+  padding-left: 12px;
+  background: rgba(37, 99, 235, 0.04);
+}
+
+.editor-item-active {
+  outline: 2px solid #2563eb;
+  outline-offset: 2px;
+  border-radius: 4px;
+}
+
+.section-order-dragging {
+  opacity: 0.45;
+  border-style: dashed !important;
+  outline: 2px solid #2563eb;
+  outline-offset: 2px;
+  cursor: grabbing;
+  transform: scale(0.97);
+}
+
+.section-order-drop-target {
+  border-color: #059669 !important;
+  background-color: #ecfdf5;
+  outline: 2px solid #10b981;
+  outline-offset: 2px;
+}
+

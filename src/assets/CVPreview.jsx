@@ -1,11 +1,12 @@
 // src/CVPreview.jsx
 import React, { useEffect, useRef, useState } from 'react';
 import { useLanguage } from '../contexts/LanguageContext.jsx';
+import { getPageBreaks } from '../utils/pageLayout.js';
 
-const CVPreview = ({ cvData, cvRef }) => {
+const CVPreview = ({ cvData, cvRef, onSelectElement, selectedElement, sectionOrder = ['summary', 'education', 'experience', 'skills'], appearance }) => {
   const { t, language } = useLanguage();
   const contentRef = useRef(null);
-  const [pages, setPages] = useState(1);
+  const [pageBreaks, setPageBreaks] = useState([]);
   
   // A4 dimensions matching PDF export
   const A4_WIDTH_PX = 794;
@@ -13,139 +14,90 @@ const CVPreview = ({ cvData, cvRef }) => {
   const MARGIN_PX = 54 * (96/72); // Convert 54pt margin to pixels (72px)
   const PDF_PAGE_WIDTH_PT = 595.28;
   const PDF_PAGE_HEIGHT_PT = 841.89;
-  const PDF_VERTICAL_MARGIN_PT = 40; // must match pdfExporter html2canvas branch
-  const EXPORT_SLICE_HEIGHT_PX = (PDF_PAGE_HEIGHT_PT - (PDF_VERTICAL_MARGIN_PT * 2)) * (A4_WIDTH_PX / PDF_PAGE_WIDTH_PT);
-  const PREVIEW_PAGE_GAP_PX = 20; // visual-only gap marker between pages
-  const PREVIEW_VERTICAL_MARGIN_PX = PDF_VERTICAL_MARGIN_PT * (A4_WIDTH_PX / PDF_PAGE_WIDTH_PT);
+  const PDF_MARGIN_PT = 54;
+  const PDF_CONTENT_WIDTH_PT = PDF_PAGE_WIDTH_PT - PDF_MARGIN_PT * 2;
+  const PDF_CONTENT_HEIGHT_PT = PDF_PAGE_HEIGHT_PT - PDF_MARGIN_PT * 2;
+  const selectionProps = (id, selection) => ({
+    'data-editor-id': id,
+    'data-editor-selection': JSON.stringify({ id, ...selection }),
+    onClick: (event) => {
+      event.stopPropagation();
+      onSelectElement?.({ id, ...selection });
+    },
+    onKeyDown: (event) => {
+      if (event.key === 'Enter' || event.key === ' ') {
+        event.preventDefault();
+        onSelectElement?.({ id, ...selection });
+      }
+    },
+    role: 'button',
+    tabIndex: 0,
+    'aria-pressed': selectedElement?.id === id
+  });
+  const sectionPosition = (section) => sectionOrder.indexOf(section) + 1;
 
-  // Re-introduce simple page-start markers (subtle)
   useEffect(() => {
-    const updatePages = () => {
-      const h = cvRef?.current?.scrollHeight || contentRef.current?.offsetHeight || 0;
-      const p = Math.max(1, Math.ceil(h / EXPORT_SLICE_HEIGHT_PX));
-      setPages(p);
+    const updatePageBreaks = () => {
+      const content = contentRef.current;
+      if (!content) return;
+      const contentRect = content.getBoundingClientRect();
+      const protectedRanges = [];
+      const addRange = (start, end) => {
+        if (end > start) protectedRanges.push([start, end]);
+      };
+      const rangeFor = (element) => {
+        const rect = element.getBoundingClientRect();
+        return [rect.top - contentRect.top, rect.bottom - contentRect.top];
+      };
+      const experienceHeading = content.querySelector('[data-section="experience-header"]');
+      const firstEntryHeading = content.querySelector('[data-section="experience-entry-header-0"]');
+      if (experienceHeading && firstEntryHeading) {
+        addRange(...[rangeFor(experienceHeading)[0], rangeFor(firstEntryHeading)[1]]);
+      }
+      content.querySelectorAll('[data-section^="experience-entry-header-"], [data-break], [data-section="skills"], [data-section^="skill-item-"]').forEach((element) => {
+        addRange(...rangeFor(element));
+      });
+      protectedRanges.sort((a, b) => a[0] - b[0]);
+
+      const cssToPt = PDF_CONTENT_WIDTH_PT / content.clientWidth;
+      const pageContentHeight = PDF_CONTENT_HEIGHT_PT / cssToPt;
+      setPageBreaks(getPageBreaks(content.scrollHeight, pageContentHeight, protectedRanges));
     };
-    updatePages();
-    const ro = new ResizeObserver(updatePages);
-    if (contentRef.current) ro.observe(contentRef.current);
-    if (cvRef?.current) ro.observe(cvRef.current);
-    window.addEventListener('resize', updatePages);
+    updatePageBreaks();
+    const observer = new ResizeObserver(updatePageBreaks);
+    if (contentRef.current) observer.observe(contentRef.current);
+    if (cvRef?.current) observer.observe(cvRef.current);
+    window.addEventListener('resize', updatePageBreaks);
     return () => {
-      ro.disconnect();
-      window.removeEventListener('resize', updatePages);
+      observer.disconnect();
+      window.removeEventListener('resize', updatePageBreaks);
     };
-  }, [cvRef, EXPORT_SLICE_HEIGHT_PX]);
+  }, [cvRef, cvData, language, sectionOrder, appearance, PDF_CONTENT_HEIGHT_PT, PDF_CONTENT_WIDTH_PT]);
 
   return (
-    <div className="relative">
-      {/* Simple left guide line only */}
-      <div 
-        style={{
-          position: 'absolute',
-          left: `${MARGIN_PX}px`,
-          top: '0px',
-          bottom: '0px',
-          width: '2px',
-          height: '100%',
-          backgroundColor: 'rgba(34, 197, 94, 0.2)',
-          border: 'none !important',
-          margin: '0',
-          padding: '0',
-          outline: 'none !important',
-          boxShadow: 'none !important',
-          zIndex: 40,
-          pointerEvents: 'none'
-        }}
-      />
-        
-      {/* Page start markers with label */}
-      {Array.from({ length: pages }, (_, i) => (
-        i === 0 ? null : (
-          <div key={i}>
-            {/* Bottom margin mask for previous page */}
-            <div
-              style={{
-                position: 'absolute',
-                left: '0px',
-                right: '0px',
-                top: `${(i * EXPORT_SLICE_HEIGHT_PX) - PREVIEW_VERTICAL_MARGIN_PX}px`,
-                height: `${PREVIEW_VERTICAL_MARGIN_PX}px`,
-                backgroundColor: '#ffffff',
-                zIndex: 8,
-                pointerEvents: 'none'
-              }}
-            />
-            {/* Visual gap between pages */}
-            <div
-              style={{
-                position: 'absolute',
-                left: '0px',
-                right: '0px',
-                top: `${i * EXPORT_SLICE_HEIGHT_PX}px`,
-                height: `${PREVIEW_PAGE_GAP_PX}px`,
-                backgroundColor: '#111827',
-                opacity: 0.85,
-                zIndex: 9,
-                pointerEvents: 'none'
-              }}
-            />
-            {/* Top margin mask for next page */}
-            <div
-              style={{
-                position: 'absolute',
-                left: '0px',
-                right: '0px',
-                top: `${(i * EXPORT_SLICE_HEIGHT_PX) + PREVIEW_PAGE_GAP_PX}px`,
-                height: `${PREVIEW_VERTICAL_MARGIN_PX}px`,
-                backgroundColor: '#ffffff',
-                zIndex: 8,
-                pointerEvents: 'none'
-              }}
-            />
-            <div
-              style={{
-                position: 'absolute',
-                left: `${MARGIN_PX}px`,
-                right: `${MARGIN_PX}px`,
-                top: `${(i * EXPORT_SLICE_HEIGHT_PX) + PREVIEW_PAGE_GAP_PX + PREVIEW_VERTICAL_MARGIN_PX}px`,
-                height: '0px',
-                borderTop: '1px dashed rgba(37,99,235,0.45)',
-                zIndex: 10,
-                pointerEvents: 'none'
-              }}
-            />
-            <div
-              style={{
-                position: 'absolute',
-                left: `${MARGIN_PX + 6}px`,
-                top: `${(i * EXPORT_SLICE_HEIGHT_PX) + PREVIEW_PAGE_GAP_PX + PREVIEW_VERTICAL_MARGIN_PX - 12}px`,
-                backgroundColor: 'rgba(37,99,235,0.12)',
-                color: '#2563eb',
-                fontSize: '10px',
-                padding: '2px 6px',
-                borderRadius: '6px',
-                border: '1px solid rgba(37,99,235,0.35)',
-                zIndex: 11,
-                pointerEvents: 'none'
-              }}
-            >
-              Page {i + 1} starts
-            </div>
-          </div>
-        )
+    <div className="relative" style={{ width: `${A4_WIDTH_PX}px` }}>
+      {pageBreaks.map((pageBreak, index) => (
+        <div
+          key={index}
+          className="cv-page-boundary"
+          aria-hidden="true"
+          style={{ top: `${MARGIN_PX + pageBreak}px` }}
+        >
+          <span>{language === 'pl' ? `Strona ${index + 2}` : `Page ${index + 2}`}</span>
+        </div>
       ))}
-
-      {/* CV Content */}
       <div
         ref={cvRef}
         className="bg-white w-full mx-auto relative z-0"
         id="cv-preview"
-        style={{ 
-          backgroundColor: '#ffffff', 
+        style={{
+          backgroundColor: '#ffffff',
           color: '#111827',
           width: `${A4_WIDTH_PX}px`,
           minHeight: `${A4_HEIGHT_PX}px`,
           padding: `${MARGIN_PX}px`,
+          '--cv-font-scale': appearance?.fontScale ?? 1,
+          '--cv-section-spacing': `${appearance?.sectionSpacing ?? 16}px`,
           border: 'none !important',
           borderTop: 'none !important',
           borderRight: 'none !important',
@@ -158,12 +110,14 @@ const CVPreview = ({ cvData, cvRef }) => {
           borderColor: 'transparent !important'
         }}
       >
-        <div ref={contentRef}>
+        <div ref={contentRef} data-cv-content className="cv-content-flow" style={{ paddingBottom: '16px' }}>
           {/* Header */}
           <header
             data-section="header"
+            {...selectionProps('personal', { section: 'personal', kind: 'section' })}
             className="flex flex-col md:flex-row items-center md:items-start justify-between mb-4"
             style={{ 
+              order: 0,
               paddingBottom: '12px',
               borderBottom: '2px solid #e5e7eb'
             }}
@@ -200,8 +154,12 @@ const CVPreview = ({ cvData, cvRef }) => {
           {cvData.summary && (
             <section 
               data-section="summary"
+              data-cv-section="summary"
+              {...selectionProps('summary', { section: 'summary', kind: 'section' })}
               className="mb-4"
               style={{ 
+                order: sectionPosition('summary'),
+                marginBottom: 'var(--cv-section-spacing, 16px)',
                 paddingBottom: '8px'
               }}
             >
@@ -215,8 +173,12 @@ const CVPreview = ({ cvData, cvRef }) => {
           {cvData.education && cvData.education.length > 0 && (
             <section 
               data-section="education"
+              data-cv-section="education"
+              {...selectionProps('education', { section: 'education', kind: 'section' })}
               className="mb-4"
               style={{ 
+                order: sectionPosition('education'),
+                marginBottom: 'var(--cv-section-spacing, 16px)',
                 paddingBottom: '8px',
                 borderBottom: '1px solid #e5e7eb'
               }}
@@ -248,8 +210,8 @@ const CVPreview = ({ cvData, cvRef }) => {
             if (validExperiences.length === 0) return null;
             
             return (
-              <section data-section="experience" className="mb-4">
-                <h2 className="text-xl font-bold text-gray-800 mb-1">{t('experience')}</h2>
+              <section data-section="experience" data-cv-section="experience" className="mb-4" style={{ order: sectionPosition('experience'), marginBottom: 'var(--cv-section-spacing, 16px)' }} {...selectionProps('experience-section', { section: 'experience', kind: 'section' })}>
+                <h2 data-section="experience-header" className="text-xl font-bold text-gray-800 mb-1">{t('experience')}</h2>
                 <div style={{ width: '220px', height: '2px', backgroundColor: '#2563eb', marginBottom: '8px' }} />
                 
                 {validExperiences.map((exp, expIndex) => {
@@ -276,6 +238,7 @@ const CVPreview = ({ cvData, cvRef }) => {
                     <div 
                       key={expIndex} 
                       data-section={`experience-${expIndex}`}
+                      {...selectionProps(`experience-${expIndex}`, { section: 'experience', kind: 'experience', index: expIndex })}
                       className="mb-2 last:mb-0"
                       style={{
                         pageBreakInside: 'avoid',
@@ -290,7 +253,8 @@ const CVPreview = ({ cvData, cvRef }) => {
                         boxSizing: 'border-box'
                       }}
                     >
-                      {titleParts.length > 0 && (
+                      <div data-section={`experience-entry-header-${expIndex}`}>
+                        {titleParts.length > 0 && (
                         <h3 
                           className="text-lg font-semibold text-gray-800 mb-1"
                           style={{
@@ -316,6 +280,7 @@ const CVPreview = ({ cvData, cvRef }) => {
                           {dates}
                         </p>
                       )}
+                      </div>
                   
                   {exp.responsibilities && exp.responsibilities.filter((resp) => String(resp || '').trim()).length > 0 && (
                     <div className="space-y-1 text-gray-700 text-sm">
@@ -394,7 +359,7 @@ const CVPreview = ({ cvData, cvRef }) => {
             const sectionTitle = cvData.skills.title || t('competencies');
 
             return (
-              <section data-section="skills">
+              <section data-section="skills" data-cv-section="skills" style={{ order: sectionPosition('skills'), marginBottom: 'var(--cv-section-spacing, 16px)' }} {...selectionProps('skills-section', { section: 'skills', kind: 'section' })}>
                 <h2 className="text-xl font-bold text-gray-800 mb-1">{sectionTitle}</h2>
                 <div style={{ width: '180px', height: '2px', backgroundColor: '#2563eb', marginBottom: '12px' }} />
                 <div className="space-y-3">
@@ -404,7 +369,7 @@ const CVPreview = ({ cvData, cvRef }) => {
                     if (!title || !content) return null;
                     
                     return (
-                      <div key={sectionId} data-section={`skill-item-${sectionId}`}>
+                      <div key={sectionId} data-section={`skill-item-${sectionId}`} {...selectionProps(`skill-${sectionId}`, { section: 'skills', kind: 'skill', sectionId })}>
                         <h3 className="text-base font-semibold text-gray-700">{title}:</h3>
                         <p className="text-gray-600 text-sm leading-relaxed whitespace-pre-line">{content}</p>
                       </div>

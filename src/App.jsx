@@ -13,6 +13,8 @@ import RightCloudDrawer from './components/RightCloudDrawer.jsx';
 const AppContent = () => {
   const cvRef = useRef(null);
   const { language } = useLanguage();
+  const [selectedElement, setSelectedElement] = useState(null);
+  const [appearance, setAppearance] = useState({ fontScale: 1, sectionSpacing: 16 });
   const [authUser, setAuthUser] = useState(null);
   const [authLoading, setAuthLoading] = useState(false);
   const [cloudLoading, setCloudLoading] = useState(false);
@@ -34,8 +36,10 @@ const AppContent = () => {
     handleRemoveResponsibility,
     handleAddExperience,
     handleRemoveExperience,
+    handleMoveExperience,
     handleAddEducation,
     handleRemoveEducation,
+    handleMoveEducation,
     handleRemoveEducationSection,
     handleAddCustomSkill,
     handleRemoveCustomSkill,
@@ -44,6 +48,9 @@ const AppContent = () => {
     importCVData,
     mergeCVData,
   } = useCVData();
+
+  const sectionOrder = cvData.sectionOrder || ['summary', 'education', 'experience', 'skills'];
+  const setSectionOrder = (nextOrder) => handleDataChange('sectionOrder', nextOrder);
 
   const handlePdfExport = () => CVPdfExporter.exportToPdf(cvRef.current, cvData, language);
 
@@ -352,17 +359,35 @@ const AppContent = () => {
       />
       <CVBuilderLayout
         cvData={cvData}
+        selectedElement={selectedElement}
+        onSelectElement={setSelectedElement}
+        sectionOrder={sectionOrder}
+        setSectionOrder={setSectionOrder}
+        appearance={appearance}
+        setAppearance={setAppearance}
         handleDataChange={handleDataChange}
         handleAddExperience={handleAddExperience}
         handleRemoveExperience={handleRemoveExperience}
+        handleMoveExperience={handleMoveExperience}
         handleAddEducation={handleAddEducation}
         handleRemoveEducation={handleRemoveEducation}
+        handleMoveEducation={handleMoveEducation}
+        handleRemoveEducationSection={handleRemoveEducationSection}
         handleAddCustomSkill={handleAddCustomSkill}
         handleRemoveCustomSkill={handleRemoveCustomSkill}
+        handleRemoveSkillSection={handleRemoveSkillSection}
+        handleMoveSkillSection={handleMoveSkillSection}
         handlePdfExport={handlePdfExport}
         importCVData={importCVData}
       />
-      <PreviewContainer cvData={cvData} cvRef={cvRef} />
+      <PreviewContainer
+        cvData={cvData}
+        cvRef={cvRef}
+        onSelectElement={setSelectedElement}
+        selectedElement={selectedElement}
+        sectionOrder={sectionOrder}
+        appearance={appearance}
+      />
       <RightCloudDrawer
         authUser={authUser}
         authLoading={authLoading}

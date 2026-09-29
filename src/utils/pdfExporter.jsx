@@ -1,6 +1,7 @@
 import { jsPDF } from 'jspdf';
 import { translations } from './translations.js';
 import html2canvas from 'html2canvas';
+import { getPageBreaks } from './pageLayout.js';
 
 export class CVPdfExporter {
   static async exportToPdf(cvElement, cvData, language = 'pl') {
@@ -12,6 +13,28 @@ export class CVPdfExporter {
       const previewElement = document.getElementById('cv-preview');
       
       if (previewElement) {
+        let renderedPages = [...previewElement.querySelectorAll('img[data-cv-page]')];
+        for (let attempt = 0; renderedPages.length === 0 && attempt < 60; attempt++) {
+          await new Promise(resolve => setTimeout(resolve, 100));
+          renderedPages = [...previewElement.querySelectorAll('img[data-cv-page]')];
+        }
+
+        if (renderedPages.length > 0) {
+          const pdf = new jsPDF({ orientation: 'portrait', unit: 'pt', format: 'a4', compress: true });
+          const pageWidthPt = pdf.internal.pageSize.getWidth();
+          const pageHeightPt = pdf.internal.pageSize.getHeight();
+
+          for (let index = 0; index < renderedPages.length; index++) {
+            if (index > 0) pdf.addPage();
+            pdf.addImage(renderedPages[index].src, 'PNG', 0, 0, pageWidthPt, pageHeightPt, undefined, 'FAST');
+          }
+
+          const fileName = `${cvData.name.replace(/[^a-zA-Z0-9\s]/g, '').replace(/\s+/g, '_') || 'CV'}_Resume.pdf`;
+          pdf.save(fileName);
+          console.log('PDF generated from the shared A4 preview pages');
+          return;
+        }
+
         try {
           console.log('Capturing CV preview with html2canvas');
           
@@ -21,7 +44,8 @@ export class CVPdfExporter {
           // Wait for styles to apply
           await new Promise(resolve => setTimeout(resolve, 200));
           
-          const canvas = await html2canvas(previewElement, {
+          const contentElement = previewElement.querySelector('[data-cv-content]');
+          const canvas = await html2canvas(contentElement || previewElement, {
             scale: 2,
             useCORS: true,
             logging: false,
@@ -43,103 +67,58 @@ export class CVPdfExporter {
               compress: true
             });
 
-            // Desired inner margins between page edge and content (top & bottom)
-            const verticalMargin = 40; // ~40px top & bottom between pages
             const pageWidthPt = pdf.internal.pageSize.getWidth();
             const pageHeightPt = pdf.internal.pageSize.getHeight();
-
-            // We map the full canvas width to the full page width
-            const imgWidthPt = pageWidthPt;
+            const pageMarginPt = 54;
+            const imgWidthPt = pageWidthPt - pageMarginPt * 2;
+            const imgHeightPt = pageHeightPt - pageMarginPt * 2;
             const pxToPtScale = imgWidthPt / canvas.width;
-
-            // Height of visible content area per page (excluding top & bottom margins)
-            const contentHeightPt = pageHeightPt - verticalMargin * 2;
-            const contentHeightPx = contentHeightPt / pxToPtScale;
-
-            // Approximate line-height in source pixels (for smoother page cuts).
-            // This helps avoid cutting text exactly in the middle of a line.
-            const approxLineHeightPx = 24;
-            const minSlicePx = Math.max(260, contentHeightPx * 0.5);
-
-            // Collect content-aware "protected starts" and ranges in preview coordinates.
-            // We avoid slicing shortly after starts and avoid slicing inside critical ranges
-            // (especially skills), so section headers don't get orphaned.
-            const protectedStarts = [];
-            const protectedRanges = [];
-            const protectedSelectors = [
-              '[data-section^="experience-"]',
-              '[data-section="skills"]',
-              '[data-section^="skill-item-"]'
-            ];
-            const protectedElements = previewElement.querySelectorAll(protectedSelectors.join(','));
-            const previewHeightPx = Math.max(1, previewElement.scrollHeight || previewElement.offsetHeight || 1);
+            const contentHeightPx = Math.floor(imgHeightPt / pxToPtScale);
+            const previewHeightPx = Math.max(1, contentElement.scrollHeight || contentElement.offsetHeight || 1);
             const domToCanvasScaleY = canvas.height / previewHeightPx;
-
-            protectedElements.forEach((el) => {
-              const domY = Math.max(0, el.offsetTop || 0);
-              const domEndY = domY + Math.max(0, el.offsetHeight || 0);
-              const canvasY = Math.round(domY * domToCanvasScaleY);
-              const canvasEndY = Math.round(domEndY * domToCanvasScaleY);
-              if (canvasY > 0 && canvasY < canvas.height) {
-                protectedStarts.push(canvasY);
-              }
-              if (canvasEndY > canvasY && canvasY < canvas.height) {
-                protectedRanges.push([canvasY, Math.min(canvas.height, canvasEndY)]);
-              }
+            const protectedRanges = [];
+            const rangeFor = (element) => {
+              const contentRect = contentElement.getBoundingClientRect();
+              const rect = element.getBoundingClientRect();
+              return [
+                Math.round((rect.top - contentRect.top) * domToCanvasScaleY),
+                Math.round((rect.bottom - contentRect.top) * domToCanvasScaleY)
+              ];
+            };
+            const addRange = (start, end) => {
+              if (end > start) protectedRanges.push([start, end]);
+            };
+            const experienceHeading = contentElement.querySelector('[data-section="experience-header"]');
+            const firstEntryHeading = contentElement.querySelector('[data-section="experience-entry-header-0"]');
+            if (experienceHeading && firstEntryHeading) {
+              addRange(rangeFor(experienceHeading)[0], rangeFor(firstEntryHeading)[1]);
+            }
+            contentElement.querySelectorAll('[data-section^="experience-entry-header-"] , [data-break], [data-section="skills"], [data-section^="skill-item-"]').forEach((element) => {
+              const [start, end] = rangeFor(element);
+              addRange(start, end);
             });
-            protectedStarts.sort((a, b) => a - b);
             protectedRanges.sort((a, b) => a[0] - b[0]);
+            const pageBreaks = getPageBreaks(canvas.height, contentHeightPx, protectedRanges);
+            const headingY = experienceHeading ? rangeFor(experienceHeading)[0] : null;
+            const firstEntryY = firstEntryHeading ? rangeFor(firstEntryHeading)[0] : null;
+            const proposedFirstEnd = Math.min(contentHeightPx, canvas.height);
+            const firstEnd = pageBreaks[0] ?? canvas.height;
+            console.info('PDF pagination geometry', {
+              canvas: { width: canvas.width, height: canvas.height },
+              preview: { width: contentElement.scrollWidth, height: previewHeightPx },
+              experienceHeadingCanvasY: headingY,
+              firstEntryHeadingCanvasY: firstEntryY,
+              proposedFirstEndCanvasY: proposedFirstEnd,
+              finalFirstEndCanvasY: firstEnd,
+              firstSliceHeightPt: firstEnd * pxToPtScale,
+              pageMarginPt
+            });
 
             let sourceY = 0;
             let pageIndex = 0;
-
-            // Slice the tall canvas into per-page chunks so we can
-            // leave real blank space (margins) at the top and bottom
             while (sourceY < canvas.height) {
-              let sliceHeightPx = Math.min(contentHeightPx, canvas.height - sourceY);
-              const isLastSlice = sourceY + sliceHeightPx >= canvas.height;
-
-              if (!isLastSlice) {
-                const proposedEnd = sourceY + sliceHeightPx;
-                const protectedWindowPx = 180;
-
-                // If proposed cut lands soon after a protected block start,
-                // move cut above that start to keep the block together.
-                for (let i = 0; i < protectedStarts.length; i++) {
-                  const startY = protectedStarts[i];
-                  if (proposedEnd > startY && proposedEnd < startY + protectedWindowPx) {
-                    const adjustedSlice = startY - sourceY;
-                    if (adjustedSlice >= minSlicePx) {
-                      sliceHeightPx = adjustedSlice;
-                    }
-                    break;
-                  }
-                }
-
-                // If cut lands inside a protected range, move cut to range start.
-                // This keeps blocks like skills together on the next page when possible.
-                const afterStartCut = sourceY + sliceHeightPx;
-                for (let i = 0; i < protectedRanges.length; i++) {
-                  const [rangeStart, rangeEnd] = protectedRanges[i];
-                  if (afterStartCut > rangeStart && afterStartCut < rangeEnd) {
-                    const adjustedSlice = rangeStart - sourceY;
-                    if (adjustedSlice >= minSlicePx) {
-                      sliceHeightPx = adjustedSlice;
-                    }
-                    break;
-                  }
-                }
-              }
-
-              // Snap slice height down to a multiple of approxLineHeightPx
-              // (except for the last page), so lines are more evenly distributed
-              // and less likely to be visually cut between pages.
-              if (sourceY + sliceHeightPx < canvas.height) {
-                const multiples = Math.floor(sliceHeightPx / approxLineHeightPx);
-                if (multiples > 0) {
-                  sliceHeightPx = multiples * approxLineHeightPx;
-                }
-              }
+              const pageBreakEnd = pageBreaks[pageIndex] ?? canvas.height;
+              const sliceHeightPx = Math.min(pageBreakEnd - sourceY, canvas.height - sourceY);
 
               // Create a temporary canvas for this page slice
               const pageCanvas = document.createElement('canvas');
@@ -169,12 +148,11 @@ export class CVPdfExporter {
                 pdf.addPage();
               }
 
-              // Draw slice with vertical margins (top & bottom)
               pdf.addImage(
                 pageImgData,
                 'PNG',
-                0,
-                verticalMargin,
+                pageMarginPt,
+                pageMarginPt,
                 imgWidthPt,
                 sliceHeightPt
               );

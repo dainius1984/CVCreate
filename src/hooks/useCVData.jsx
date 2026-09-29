@@ -1,5 +1,7 @@
 import { useState } from 'react';
 
+const DEFAULT_SECTION_ORDER = ['summary', 'education', 'experience', 'skills'];
+
 const initialCVData = {
   name: 'Your Name',
   title: '',
@@ -7,6 +9,7 @@ const initialCVData = {
   phone: '[Phone Number]',
   email: '[Email Address]',
   summary: 'A highly motivated and results-driven professional with a passion for [Your Industry]. Adept at [Key Skill 1] and [Key Skill 2], with a proven track record of [Specific Achievement]. Seeking to leverage my expertise to contribute to the success of a dynamic team.',
+  sectionOrder: DEFAULT_SECTION_ORDER,
   experience: [],
   education: [
     {
@@ -98,6 +101,16 @@ export const useCVData = () => {
     });
   };
 
+  const handleMoveExperience = (index, direction) => {
+    setCvData(prev => {
+      const experience = [...prev.experience];
+      const targetIndex = direction === 'up' ? index - 1 : index + 1;
+      if (targetIndex < 0 || targetIndex >= experience.length) return prev;
+      [experience[index], experience[targetIndex]] = [experience[targetIndex], experience[index]];
+      return { ...prev, experience };
+    });
+  };
+
   const handleAddEducation = () => {
     setCvData(prev => ({
       ...prev,
@@ -113,6 +126,16 @@ export const useCVData = () => {
       const next = { ...prev, education: [...prev.education] };
       next.education.splice(idx, 1);
       return next;
+    });
+  };
+
+  const handleMoveEducation = (index, direction) => {
+    setCvData(prev => {
+      const education = [...prev.education];
+      const targetIndex = direction === 'up' ? index - 1 : index + 1;
+      if (targetIndex < 0 || targetIndex >= education.length) return prev;
+      [education[index], education[targetIndex]] = [education[targetIndex], education[index]];
+      return { ...prev, education };
     });
   };
 
@@ -208,6 +231,11 @@ export const useCVData = () => {
   };
 
   const importCVData = (data) => {
+    const importedOrder = Array.isArray(data.sectionOrder)
+      ? data.sectionOrder.filter(section => DEFAULT_SECTION_ORDER.includes(section))
+      : [];
+    const sectionOrder = [...new Set([...importedOrder, ...DEFAULT_SECTION_ORDER])];
+
     setCvData({
       name: data.name || 'Your Name',
       title: data.title || '',
@@ -215,6 +243,7 @@ export const useCVData = () => {
       phone: data.phone || '[Phone Number]',
       email: data.email || '[Email Address]',
       summary: data.summary || '',
+      sectionOrder,
       experience: Array.isArray(data.experience) ? data.experience : [],
       education: Array.isArray(data.education) ? data.education : [],
       skills: data.skills || {
@@ -239,8 +268,10 @@ export const useCVData = () => {
     handleRemoveResponsibility,
     handleAddExperience,
     handleRemoveExperience,
+    handleMoveExperience,
     handleAddEducation,
     handleRemoveEducation,
+    handleMoveEducation,
     handleRemoveEducationSection,
     handleAddCustomSkill,
     handleRemoveCustomSkill,
