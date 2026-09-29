@@ -1,7 +1,7 @@
 // src/CVPreview.jsx
 import React, { useEffect, useRef, useState } from 'react';
 import { useLanguage } from '../contexts/LanguageContext.jsx';
-import { getPageBreaks } from '../utils/pageLayout.js';
+import { getPageBreaks, getProtectedPageRanges } from '../utils/pageLayout.js';
 
 const CVPreview = ({ cvData, cvRef, onSelectElement, selectedElement, sectionOrder = ['summary', 'education', 'experience', 'skills'], appearance }) => {
   const { t, language } = useLanguage();
@@ -40,24 +40,7 @@ const CVPreview = ({ cvData, cvRef, onSelectElement, selectedElement, sectionOrd
     const updatePageBreaks = () => {
       const content = contentRef.current;
       if (!content) return;
-      const contentRect = content.getBoundingClientRect();
-      const protectedRanges = [];
-      const addRange = (start, end) => {
-        if (end > start) protectedRanges.push([start, end]);
-      };
-      const rangeFor = (element) => {
-        const rect = element.getBoundingClientRect();
-        return [rect.top - contentRect.top, rect.bottom - contentRect.top];
-      };
-      const experienceHeading = content.querySelector('[data-section="experience-header"]');
-      const firstEntryHeading = content.querySelector('[data-section="experience-entry-header-0"]');
-      if (experienceHeading && firstEntryHeading) {
-        addRange(...[rangeFor(experienceHeading)[0], rangeFor(firstEntryHeading)[1]]);
-      }
-      content.querySelectorAll('[data-section^="experience-entry-header-"], [data-break], [data-section="skills"], [data-section^="skill-item-"]').forEach((element) => {
-        addRange(...rangeFor(element));
-      });
-      protectedRanges.sort((a, b) => a[0] - b[0]);
+      const protectedRanges = getProtectedPageRanges(content);
 
       const cssToPt = PDF_CONTENT_WIDTH_PT / content.clientWidth;
       const pageContentHeight = PDF_CONTENT_HEIGHT_PT / cssToPt;

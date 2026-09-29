@@ -1,7 +1,7 @@
 import { jsPDF } from 'jspdf';
 import { translations } from './translations.js';
 import html2canvas from 'html2canvas';
-import { getPageBreaks } from './pageLayout.js';
+import { getPageBreaks, getProtectedPageRanges } from './pageLayout.js';
 
 export class CVPdfExporter {
   static async exportToPdf(cvElement, cvData, language = 'pl') {
@@ -76,31 +76,12 @@ export class CVPdfExporter {
             const contentHeightPx = Math.floor(imgHeightPt / pxToPtScale);
             const previewHeightPx = Math.max(1, contentElement.scrollHeight || contentElement.offsetHeight || 1);
             const domToCanvasScaleY = canvas.height / previewHeightPx;
-            const protectedRanges = [];
-            const rangeFor = (element) => {
-              const contentRect = contentElement.getBoundingClientRect();
-              const rect = element.getBoundingClientRect();
-              return [
-                Math.round((rect.top - contentRect.top) * domToCanvasScaleY),
-                Math.round((rect.bottom - contentRect.top) * domToCanvasScaleY)
-              ];
-            };
-            const addRange = (start, end) => {
-              if (end > start) protectedRanges.push([start, end]);
-            };
+            const protectedRanges = getProtectedPageRanges(contentElement, domToCanvasScaleY);
             const experienceHeading = contentElement.querySelector('[data-section="experience-header"]');
             const firstEntryHeading = contentElement.querySelector('[data-section="experience-entry-header-0"]');
-            if (experienceHeading && firstEntryHeading) {
-              addRange(rangeFor(experienceHeading)[0], rangeFor(firstEntryHeading)[1]);
-            }
-            contentElement.querySelectorAll('[data-section^="experience-entry-header-"] , [data-break], [data-section="skills"], [data-section^="skill-item-"]').forEach((element) => {
-              const [start, end] = rangeFor(element);
-              addRange(start, end);
-            });
-            protectedRanges.sort((a, b) => a[0] - b[0]);
             const pageBreaks = getPageBreaks(canvas.height, contentHeightPx, protectedRanges);
-            const headingY = experienceHeading ? rangeFor(experienceHeading)[0] : null;
-            const firstEntryY = firstEntryHeading ? rangeFor(firstEntryHeading)[0] : null;
+            const headingY = experienceHeading ? Math.round((experienceHeading.getBoundingClientRect().top - contentElement.getBoundingClientRect().top) * domToCanvasScaleY) : null;
+            const firstEntryY = firstEntryHeading ? Math.round((firstEntryHeading.getBoundingClientRect().top - contentElement.getBoundingClientRect().top) * domToCanvasScaleY) : null;
             const proposedFirstEnd = Math.min(contentHeightPx, canvas.height);
             const firstEnd = pageBreaks[0] ?? canvas.height;
             console.info('PDF pagination geometry', {
