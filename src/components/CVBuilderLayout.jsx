@@ -31,6 +31,7 @@ const CVBuilderLayout = ({
   const formPanelRef = useRef(null);
   const [draggedSection, setDraggedSection] = useState(null);
   const [dropTargetSection, setDropTargetSection] = useState(null);
+  const [dropTargetPlacement, setDropTargetPlacement] = useState(null);
 
   useEffect(() => {
     if (!selectedElement?.section) return;
@@ -57,11 +58,17 @@ const CVBuilderLayout = ({
     event.dataTransfer.setData('text/plain', section);
     setDraggedSection(section);
     setDropTargetSection(null);
+    setDropTargetPlacement(null);
   };
   const handleSectionDragOver = (event, section) => {
     event.preventDefault();
     event.dataTransfer.dropEffect = 'move';
-    if (section !== draggedSection) setDropTargetSection(section);
+    if (section !== draggedSection) {
+      const bounds = event.currentTarget.getBoundingClientRect();
+      const placement = event.clientX < bounds.left + bounds.width / 2 ? 'before' : 'after';
+      setDropTargetSection(section);
+      setDropTargetPlacement(placement);
+    }
   };
   const handleSectionDrop = (event, targetSection) => {
     event.preventDefault();
@@ -69,14 +76,19 @@ const CVBuilderLayout = ({
     if (!sourceSection || sourceSection === targetSection) return;
     const next = sectionOrder.filter(section => section !== sourceSection);
     const targetIndex = next.indexOf(targetSection);
-    next.splice(targetIndex < 0 ? next.length : targetIndex, 0, sourceSection);
+    const bounds = event.currentTarget.getBoundingClientRect();
+    const insertAfter = event.clientX >= bounds.left + bounds.width / 2;
+    const insertionIndex = targetIndex < 0 ? next.length : targetIndex + Number(insertAfter);
+    next.splice(insertionIndex, 0, sourceSection);
     setSectionOrder(next);
     setDraggedSection(null);
     setDropTargetSection(null);
+    setDropTargetPlacement(null);
   };
   const handleSectionDragEnd = () => {
     setDraggedSection(null);
     setDropTargetSection(null);
+    setDropTargetPlacement(null);
   };
   const sectionNames = language === 'pl'
     ? { summary: 'O mnie', education: 'Edukacja', experience: 'Doświadczenie', skills: 'Umiejętności' }
@@ -135,7 +147,7 @@ const CVBuilderLayout = ({
                   onDrop={event => handleSectionDrop(event, section)}
                   onDragEnd={handleSectionDragEnd}
                   aria-grabbed={draggedSection === section}
-                  className={`inline-flex items-center gap-1 rounded border border-gray-200 px-2 py-1 text-sm cursor-grab select-none transition ${draggedSection === section ? 'section-order-dragging' : ''} ${dropTargetSection === section ? 'section-order-drop-target' : ''}`}
+                  className={`inline-flex items-center gap-1 rounded border border-gray-200 px-2 py-1 text-sm cursor-grab select-none transition ${draggedSection === section ? 'section-order-dragging' : ''} ${dropTargetSection === section ? `section-order-drop-target section-order-drop-${dropTargetPlacement}` : ''}`}
                 >
                   <span>{sectionNames[section]}</span>
                   <button type="button" onClick={() => moveSection(section, 'up')} disabled={index === 0} aria-label={`${sectionNames[section]} ${language === 'pl' ? 'w górę' : 'up'}`} className="px-1 text-gray-600 disabled:opacity-30">↑</button>

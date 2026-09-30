@@ -1,4 +1,4 @@
-import React, { useCallback, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { useLanguage } from '../../contexts/LanguageContext.jsx';
 import Cropper from 'react-easy-crop';
 
@@ -7,8 +7,38 @@ const Photo = ({ photoUrl, onChange, onCroppedChange }) => {
   const [imageSrc, setImageSrc] = useState(photoUrl || '');
   const [crop, setCrop] = useState({ x: 0, y: 0 });
   const [zoom, setZoom] = useState(1);
+  const [mediaSize, setMediaSize] = useState(null);
+  const [cropSize, setCropSize] = useState(null);
   const [croppedAreaPixels, setCroppedAreaPixels] = useState(null);
   const fileInputRef = useRef(null);
+  const minimumZoom = mediaSize && cropSize
+    ? Math.max(1, cropSize.width / mediaSize.width, cropSize.height / mediaSize.height)
+    : 1;
+  const maximumZoom = Math.max(3, minimumZoom * 3);
+
+  useEffect(() => {
+    setImageSrc(photoUrl || '');
+    setCrop({ x: 0, y: 0 });
+    setZoom(1);
+    setMediaSize(null);
+    setCropSize(null);
+  }, [photoUrl]);
+
+  useEffect(() => {
+    if (zoom < minimumZoom) {
+      setCrop({ x: 0, y: 0 });
+      setZoom(minimumZoom);
+    }
+  }, [minimumZoom, zoom]);
+
+  const loadImage = useCallback((source) => {
+    setImageSrc(source);
+    setCrop({ x: 0, y: 0 });
+    setZoom(1);
+    setMediaSize(null);
+    setCropSize(null);
+    onChange('photoUrl', source);
+  }, [onChange]);
 
   const onDrop = useCallback((event) => {
     event.preventDefault();
@@ -17,11 +47,10 @@ const Photo = ({ photoUrl, onChange, onCroppedChange }) => {
     const reader = new FileReader();
     reader.onload = () => {
       const result = reader.result?.toString() || '';
-      setImageSrc(result);
-      onChange('photoUrl', result);
+      loadImage(result);
     };
     reader.readAsDataURL(file);
-  }, [onChange]);
+  }, [loadImage]);
 
   const onFileSelect = useCallback((event) => {
     const file = event.target.files?.[0];
@@ -29,11 +58,10 @@ const Photo = ({ photoUrl, onChange, onCroppedChange }) => {
     const reader = new FileReader();
     reader.onload = () => {
       const result = reader.result?.toString() || '';
-      setImageSrc(result);
-      onChange('photoUrl', result);
+      loadImage(result);
     };
     reader.readAsDataURL(file);
-  }, [onChange]);
+  }, [loadImage]);
 
   const onCropComplete = useCallback((_croppedArea, croppedAreaPixelsVal) => {
     setCroppedAreaPixels(croppedAreaPixelsVal);
@@ -94,12 +122,17 @@ const Photo = ({ photoUrl, onChange, onCroppedChange }) => {
             image={imageSrc}
             crop={crop}
             zoom={zoom}
+            minZoom={minimumZoom}
+            maxZoom={maximumZoom}
             aspect={1}
             cropShape="round"
             showGrid={false}
+            restrictPosition
             onCropChange={setCrop}
-            onZoomChange={setZoom}
+            onZoomChange={(nextZoom) => setZoom(Math.max(minimumZoom, nextZoom))}
             onCropComplete={onCropComplete}
+            onMediaLoaded={setMediaSize}
+            onCropSizeChange={setCropSize}
           />
         </div>
       )}
@@ -107,7 +140,14 @@ const Photo = ({ photoUrl, onChange, onCroppedChange }) => {
       {imageSrc && (
         <div className="mt-3 flex items-center gap-3">
           <label className="text-sm text-gray-700">Zoom</label>
-          <input type="range" min="1" max="3" step="0.01" value={zoom} onChange={(e) => setZoom(parseFloat(e.target.value))} />
+          <input type="range" min={minimumZoom} max={maximumZoom} step="0.01" value={zoom} onChange={(e) => setZoom(Math.max(minimumZoom, parseFloat(e.target.value)))} />
+          <button
+            type="button"
+            onClick={() => setCrop({ x: 0, y: 0 })}
+            className="px-3 py-2 rounded-md border border-gray-300 text-sm text-gray-700 hover:bg-gray-50"
+          >
+            {language === 'pl' ? 'Wyśrodkuj' : 'Center'}
+          </button>
           <button
             type="button"
             onClick={createCircularCroppedImage}
