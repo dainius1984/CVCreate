@@ -1,11 +1,12 @@
 // src/CVPreview.jsx
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { useLanguage } from '../contexts/LanguageContext.jsx';
 import { getPageBreaks, getProtectedPageRanges } from '../utils/pageLayout.js';
 
 const CVPreview = ({ cvData, cvRef, onSelectElement, selectedElement, sectionOrder = ['summary', 'education', 'experience', 'skills'], appearance }) => {
   const { t, language } = useLanguage();
   const contentRef = useRef(null);
+  const pageStackRef = useRef(null);
   const [pageBreaks, setPageBreaks] = useState([]);
   
   // A4 dimensions matching PDF export
@@ -57,28 +58,66 @@ const CVPreview = ({ cvData, cvRef, onSelectElement, selectedElement, sectionOrd
     };
   }, [cvRef, cvData, language, sectionOrder, appearance, PDF_CONTENT_HEIGHT_PT, PDF_CONTENT_WIDTH_PT]);
 
+  useLayoutEffect(() => {
+    const source = contentRef.current;
+    const pageStack = pageStackRef.current;
+    if (!source || !pageStack) return;
+
+    pageStack.replaceChildren();
+    const pageBounds = [0, ...pageBreaks, source.scrollHeight];
+
+    for (let index = 0; index < pageBounds.length - 1; index++) {
+      const page = document.createElement('div');
+      page.className = 'cv-page-sheet';
+      page.setAttribute('role', 'group');
+      page.setAttribute('aria-label', language === 'pl' ? `Strona ${index + 1}` : `Page ${index + 1}`);
+
+      const clone = source.cloneNode(true);
+      clone.removeAttribute('data-cv-content');
+      clone.classList.remove('cv-source-content');
+      clone.style.position = 'absolute';
+      clone.style.left = `${MARGIN_PX}px`;
+      clone.style.top = `${MARGIN_PX - pageBounds[index]}px`;
+      clone.style.width = `${A4_WIDTH_PX - MARGIN_PX * 2}px`;
+      clone.style.paddingBottom = '16px';
+      clone.style.visibility = 'visible';
+      clone.style.pointerEvents = 'auto';
+      page.appendChild(clone);
+
+      const pageNumber = document.createElement('span');
+      pageNumber.className = 'cv-page-number';
+      pageNumber.setAttribute('aria-hidden', 'true');
+      pageNumber.textContent = language === 'pl' ? `Strona ${index + 1}` : `Page ${index + 1}`;
+      page.appendChild(pageNumber);
+      pageStack.appendChild(page);
+
+      const selectFromPage = (event) => {
+        const selection = event.target.closest('[data-editor-selection]');
+        if (selection) onSelectElement?.(JSON.parse(selection.dataset.editorSelection));
+      };
+      page.addEventListener('click', selectFromPage);
+      page.addEventListener('keydown', (event) => {
+        if (event.key !== 'Enter' && event.key !== ' ') return;
+        const selection = event.target.closest('[data-editor-selection]');
+        if (!selection) return;
+        event.preventDefault();
+        onSelectElement?.(JSON.parse(selection.dataset.editorSelection));
+      });
+    }
+  }, [pageBreaks, cvData, language, sectionOrder, appearance, selectedElement, onSelectElement, A4_WIDTH_PX, MARGIN_PX]);
+
   return (
     <div className="relative" style={{ width: `${A4_WIDTH_PX}px` }}>
-      {pageBreaks.map((pageBreak, index) => (
-        <div
-          key={index}
-          className="cv-page-boundary"
-          aria-hidden="true"
-          style={{ top: `${MARGIN_PX + pageBreak}px` }}
-        >
-          <span>{language === 'pl' ? `Strona ${index + 2}` : `Page ${index + 2}`}</span>
-        </div>
-      ))}
       <div
         ref={cvRef}
-        className="bg-white w-full mx-auto relative z-0"
+        className="bg-white w-full mx-auto relative z-0 cv-page-preview"
         id="cv-preview"
         style={{
-          backgroundColor: '#ffffff',
+          backgroundColor: '#e5e7eb',
           color: '#111827',
           width: `${A4_WIDTH_PX}px`,
           minHeight: `${A4_HEIGHT_PX}px`,
-          padding: `${MARGIN_PX}px`,
+          padding: 0,
           '--cv-font-scale': appearance?.fontScale ?? 1,
           '--cv-section-spacing': `${appearance?.sectionSpacing ?? 16}px`,
           border: 'none !important',
@@ -93,7 +132,8 @@ const CVPreview = ({ cvData, cvRef, onSelectElement, selectedElement, sectionOrd
           borderColor: 'transparent !important'
         }}
       >
-        <div ref={contentRef} data-cv-content className="cv-content-flow" style={{ paddingBottom: '16px' }}>
+        <div ref={pageStackRef} className="cv-page-stack" aria-label={language === 'pl' ? 'Podgląd stron CV' : 'CV page preview'} />
+        <div ref={contentRef} data-cv-content className="cv-content-flow cv-source-content" style={{ paddingBottom: '16px' }}>
           {/* Header */}
           <header
             data-section="header"
